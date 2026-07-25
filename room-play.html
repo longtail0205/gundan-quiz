@@ -932,6 +932,10 @@ function listenHostTransfer() {
   });
 }
 
+</script>
+
+<!-- NAGAOクイズ（通常scriptで直接DEFAULT_GENRESにアクセス） -->
+<script>
 /* ============================================================
    NAGAOクイズ（ソロプレイ）
 ============================================================ */
@@ -941,10 +945,21 @@ let _nagaoScore   = 0;
 let _nagaoTotal   = 0;
 let _nagaoResults = [];
 
+function getNagaoGenre() {
+  // DEFAULT_GENRESから直接取得（localStorageより優先）
+  if (typeof DEFAULT_GENRES !== 'undefined') {
+    const g = DEFAULT_GENRES.find(g => g.id === 'nagao');
+    if (g) return g;
+  }
+  if (window.GENRES) {
+    const g = window.GENRES.find(g => g.id === 'nagao');
+    if (g) return g;
+  }
+  return null;
+}
+
 function showNagaoTop() {
-  // NAGAO専用問題を取得
-  const nagaoGenre = (window.DEFAULT_GENRES || []).find(g => g.id === 'nagao')
-                  || (window.GENRES        || []).find(g => g.id === 'nagao');
+  const nagaoGenre = getNagaoGenre();
   const count = nagaoGenre ? nagaoGenre.questions.length : 0;
   const el = document.getElementById('nagao-q-count');
   if (el) el.textContent = `現在の問題数：${count}問`;
@@ -952,8 +967,7 @@ function showNagaoTop() {
 }
 
 window.startNagaoQuiz = (num) => {
-  const nagaoGenre = (window.DEFAULT_GENRES || []).find(g => g.id === 'nagao')
-                  || (window.GENRES        || []).find(g => g.id === 'nagao');
+  const nagaoGenre = getNagaoGenre();
   if (!nagaoGenre || nagaoGenre.questions.length === 0) {
     alert('問題がまだ登録されていません');
     return;
