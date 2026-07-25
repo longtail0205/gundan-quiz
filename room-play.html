@@ -84,7 +84,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- 参加画面 -->
 <div class="screen active" id="screen-join">
-  <div style="padding:40px 0 24px;">
+  <div style="padding:40px 0 24px;position:relative;">
+    <button onclick="forceRefresh()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:50px;padding:5px 10px;font-size:11px;color:var(--text-muted);cursor:pointer;font-family:'Noto Sans JP',sans-serif;">🔄 更新</button>
     <div class="join-title">軍団クイズ</div>
     <div class="join-sub">ルームに参加する</div>
   </div>
@@ -344,6 +345,13 @@ function showNagaoResult() {
 }
 
 function backToNagaoTop() { showNagaoTop(); }
+
+// 最新版に更新（キャッシュ回避のURLパラメータを付けて再読み込み。履歴やCookie等には影響しない）
+function forceRefresh() {
+  const url = new URL(location.href);
+  url.searchParams.set('_r', Date.now());
+  location.replace(url.toString());
+}
 </script>
 
 <!-- Firebase + メインロジック -->
