@@ -177,6 +177,28 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
   </div>
 
+  <!-- 自由回答 -->
+  <div id="play-jiyuu-area" style="display:none;">
+    <div id="jiyuu-input-area">
+      <label class="label">自由に回答してください</label>
+      <textarea class="kizyutsu-textarea" id="jiyuu-textarea" placeholder="回答を入力..."></textarea>
+      <button class="btn kizyutsu-btn" onclick="submitJiyuu()" style="margin-top:8px;" id="btn-submit-jiyuu">✉️ 回答を送信</button>
+    </div>
+    <div class="kizyutsu-sent" id="jiyuu-sent-msg" style="display:none;">
+      ✅ 回答しました。ホストの公開を待っています...
+    </div>
+    <!-- 伏せ字状態の一覧 -->
+    <div id="jiyuu-hidden-list" style="display:none;">
+      <div style="font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:10px;letter-spacing:0.05em;">みんなの回答（公開待ち）</div>
+      <div class="all-answers" id="jiyuu-hidden-items"></div>
+    </div>
+    <!-- 公開後の一覧 -->
+    <div id="jiyuu-revealed-list" style="display:none;">
+      <div style="font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:10px;letter-spacing:0.05em;">みんなの回答</div>
+      <div class="all-answers" id="jiyuu-revealed-items"></div>
+    </div>
+  </div>
+
   <!-- 全員の結果表示エリア -->
   <div id="play-results-area" style="display:none;"></div>
 
@@ -320,12 +342,17 @@ function listenQuestion() {
       }
     } else if (q.status === 'closed') {
       handleClosed(q);
+    } else if (q.status === 'jiyuu_closed') {
+      handleJiyuuClosed(q);
+    } else if (q.status === 'jiyuu_all_revealed') {
+      handleJiyuuAllRevealed(q);
     } else if (q.status === 'judged') {
-      // 判定結果
       handleJudged(q);
     } else if (q.status === 'revealed') {
-      // 早押し正解表示
       handleRevealed(q);
+    } else if (q.jiyuuRevealed) {
+      // 一人ずつ公開の更新
+      handleJiyuuPartialReveal(q);
     }
   });
 }
@@ -339,7 +366,7 @@ function renderQuestion(q) {
 
   document.getElementById('play-badge').textContent    = q.genreName || '';
   document.getElementById('play-question').textContent = q.text || '';
-  document.getElementById('play-status-text').textContent = type === 'hayaoshi' ? '早押し問題' : type === 'kizyutsu' ? '記述回答問題' : '4択問題';
+  document.getElementById('play-status-text').textContent = type === 'hayaoshi' ? '早押し問題' : type === 'kizyutsu' ? '記述回答問題' : type === 'jiyuu' ? '自由回答問題' : '4択問題';
 
   const md = document.getElementById('play-media');
   if (q.media) {
@@ -351,6 +378,7 @@ function renderQuestion(q) {
   document.getElementById('play-yontaku-area').style.display  = 'none';
   document.getElementById('play-hayaoshi-area').style.display = 'none';
   document.getElementById('play-kizyutsu-area').style.display = 'none';
+  document.getElementById('play-jiyuu-area').style.display    = 'none';
   document.getElementById('play-results-area').style.display  = 'none';
   document.getElementById('waiting-for-next').style.display   = 'none';
 
@@ -375,6 +403,15 @@ function renderQuestion(q) {
     document.getElementById('btn-submit-kizyutsu').disabled     = false;
     document.getElementById('kizyutsu-input-area').style.display = 'block';
     document.getElementById('kizyutsu-sent-msg').style.display  = 'none';
+  } else if (type === 'jiyuu') {
+    document.getElementById('play-jiyuu-area').style.display    = 'block';
+    document.getElementById('jiyuu-textarea').value             = '';
+    document.getElementById('jiyuu-textarea').disabled          = false;
+    document.getElementById('btn-submit-jiyuu').disabled        = false;
+    document.getElementById('jiyuu-input-area').style.display   = 'block';
+    document.getElementById('jiyuu-sent-msg').style.display     = 'none';
+    document.getElementById('jiyuu-hidden-list').style.display  = 'none';
+    document.getElementById('jiyuu-revealed-list').style.display = 'none';
   }
 }
 
@@ -446,6 +483,26 @@ window.submitKizyutsu = async () => {
 
   document.getElementById('kizyutsu-input-area').style.display = 'none';
   document.getElementById('kizyutsu-sent-msg').style.display   = 'block';
+};
+
+/* ============================================================
+   自由回答送信
+============================================================ */
+window.submitJiyuu = async () => {
+  const text = document.getElementById('jiyuu-textarea').value.trim();
+  if (!text) { alert('回答を入力してください'); return; }
+
+  document.getElementById('jiyuu-textarea').disabled   = true;
+  document.getElementById('btn-submit-jiyuu').disabled = true;
+
+  await set(ref(db, `rooms/${roomId}/answers/${playerId}`), {
+    playerName,
+    text,
+    answeredAt: Date.now()
+  });
+
+  document.getElementById('jiyuu-input-area').style.display = 'none';
+  document.getElementById('jiyuu-sent-msg').style.display   = 'block';
 };
 
 /* ============================================================
@@ -555,6 +612,57 @@ function handleRevealed(q) {
       </div>`;
   }
 }
+/* ============================================================
+   自由回答の表示処理
+============================================================ */
+async function handleJiyuuClosed(q) {
+  // 締め切り → 名前だけ表示・回答は伏せ字
+  const pSnap   = await get(ref(db, `rooms/${roomId}/players`));
+  const players = pSnap.val() || {};
+
+  document.getElementById('jiyuu-input-area').style.display  = 'none';
+  document.getElementById('jiyuu-sent-msg').style.display    = 'none';
+  document.getElementById('jiyuu-hidden-list').style.display = 'block';
+
+  document.getElementById('jiyuu-hidden-items').innerHTML = Object.entries(players).map(([id, p]) => `
+    <div class="answer-item" id="jplay-${id}">
+      <div class="answer-item-name">${p.name}</div>
+      <div class="answer-item-text" style="color:var(--text-muted);letter-spacing:0.2em;">？？？</div>
+    </div>
+  `).join('');
+}
+
+function handleJiyuuPartialReveal(q) {
+  const revealed = q.jiyuuRevealed || {};
+  Object.entries(revealed).forEach(([id, text]) => {
+    const el = document.getElementById(`jplay-${id}`);
+    if (el) {
+      const textEl = el.querySelector('.answer-item-text');
+      if (textEl && textEl.textContent === '？？？') {
+        textEl.textContent = text;
+        textEl.style.color = '#fff';
+        el.style.borderColor = 'rgba(255,215,0,0.3)';
+        el.style.background  = 'rgba(255,215,0,0.04)';
+      }
+    }
+  });
+}
+
+async function handleJiyuuAllRevealed(q) {
+  const revealed = q.jiyuuRevealed || {};
+  const pSnap    = await get(ref(db, `rooms/${roomId}/players`));
+  const players  = pSnap.val() || {};
+
+  document.getElementById('jiyuu-hidden-list').style.display   = 'none';
+  document.getElementById('jiyuu-revealed-list').style.display = 'block';
+  document.getElementById('jiyuu-revealed-items').innerHTML = Object.entries(players).map(([id, p]) => `
+    <div class="answer-item" style="border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.04);">
+      <div class="answer-item-name">${p.name}</div>
+      <div class="answer-item-text">${revealed[id] || '（未回答）'}</div>
+    </div>
+  `).join('');
+}
+
 /* ============================================================
    ホスト指名の監視
 ============================================================ */

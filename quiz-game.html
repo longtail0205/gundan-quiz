@@ -515,6 +515,7 @@ label.btn-export input[type="file"]:disabled {
           <option value="yontaku">4択問題</option>
           <option value="hayaoshi">早押し問題</option>
           <option value="kizyutsu">記述式問題</option>
+          <option value="jiyuu">自由回答問題</option>
         </select>
       </div>
       <div class="form-row">
@@ -595,6 +596,17 @@ label.btn-export input[type="file"]:disabled {
         <div class="form-row">
           <label class="form-label">正解（ホストが判定の際に参照するテキスト）</label>
           <input class="form-input" id="mqf-kizyutsu-answer" placeholder="例：織田信長" />
+        </div>
+      </div>
+    </div>
+    <!-- 自由回答専用 -->
+    <div id="mqf-jiyuu-section" style="display:none">
+      <div class="form-section">
+        <div class="form-section-title">自由回答について</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.7;">
+          全員が自由に回答を入力します。<br>
+          正誤判定はなく、回答を見せ合って楽しむ問題です。<br>
+          ホストが一斉公開または一人ずつ公開を選べます。
         </div>
       </div>
     </div>
@@ -1268,6 +1280,7 @@ function toggleQFormType() {
   document.getElementById('mqf-yontaku-section').style.display  = type === 'yontaku'  ? 'block' : 'none';
   document.getElementById('mqf-hayaoshi-section').style.display = type === 'hayaoshi' ? 'block' : 'none';
   document.getElementById('mqf-kizyutsu-section').style.display = type === 'kizyutsu' ? 'block' : 'none';
+  document.getElementById('mqf-jiyuu-section').style.display    = type === 'jiyuu'    ? 'block' : 'none';
 }
 /* ============================================================
    CSVインポート・エクスポート
@@ -1466,6 +1479,8 @@ function saveQuestion() {
     const answer = document.getElementById('mqf-kizyutsu-answer').value.trim();
     if (!answer) { alert('正解テキストを入力してください'); return; }
     q.answer = answer;
+  } else if (type === 'jiyuu') {
+    // 自由回答は正解なし
   } else {
     const answer = document.getElementById('mqf-answer').value.trim();
     if (!answer) { alert('正解テキストを入力してください'); return; }
