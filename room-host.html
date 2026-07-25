@@ -423,7 +423,8 @@ window.backToWaiting = () => {
 let _masterMode     = localStorage.getItem('gundan_master') === '1';
 let _longPressTimer = null;
 
-function initMasterMode() {
+// イベントリスナーはページ読み込み時に1回だけ登録
+document.addEventListener('DOMContentLoaded', () => {
   const titleEl = document.getElementById('master-trigger');
   if (!titleEl) return;
   titleEl.addEventListener('pointerdown', () => {
@@ -435,6 +436,11 @@ function initMasterMode() {
   });
   titleEl.addEventListener('pointerup',    () => clearTimeout(_longPressTimer));
   titleEl.addEventListener('pointerleave', () => clearTimeout(_longPressTimer));
+  titleEl.addEventListener('touchend',     () => clearTimeout(_longPressTimer));
+});
+
+function initMasterMode() {
+  // UIの更新のみ（イベントリスナーは登録済み）
   updateMasterModeUI();
 }
 
