@@ -728,6 +728,17 @@ window.judgeHayaoshi = async (isCorrect) => {
   await update(ref(db, `rooms/${roomId}/currentQuestion`), { judgeResult: result, status: 'judged' });
   document.getElementById('btn-hayaoshi-correct').disabled = true;
   document.getElementById('btn-hayaoshi-wrong').disabled   = true;
+
+  // 正解なら早押しした人に1点
+  if (isCorrect) {
+    const aSnap   = await get(ref(db, `rooms/${roomId}/answers`));
+    const answers = aSnap.val() || {};
+    const pressed = Object.entries(answers).find(([id, a]) => a.type === 'hayaoshi');
+    if (pressed) {
+      const [pid, ans] = pressed;
+      addPointByName(ans.playerName);
+    }
+  }
 };
 
 window.revealAnswer = async () => {
@@ -773,6 +784,14 @@ window.closeYontaku = async () => {
     </div>`;
   }).join('');
   document.getElementById('yontaku-results-area').style.display = 'block';
+
+  // 正解者に1点自動加点
+  Object.entries(players).forEach(([id, p]) => {
+    const ans = answers[id];
+    if (ans && ans.choiceIndex === currentQuestion.correct) {
+      addPointByName(p.name);
+    }
+  });
 };
 
 /* ============================================================
@@ -824,6 +843,14 @@ window.submitKizyutsuJudge = async () => {
   await update(ref(db, `rooms/${roomId}/currentQuestion`), {
     status: 'judged',
     kizyutsuJudges
+  });
+  // 正解者に1点自動加点
+  Object.entries(kizyutsuJudges).forEach(([pid, isCorrect]) => {
+    if (isCorrect) {
+      get(ref(db, `rooms/${roomId}/players/${pid}`)).then(snap => {
+        if (snap.exists()) addPointByName(snap.val().name);
+      });
+    }
   });
   alert('判定を送信しました！');
 };
@@ -936,6 +963,13 @@ function loadPlayers() {
 }
 function savePlayers() {
   try { localStorage.setItem(PB_KEY(), JSON.stringify(_players)); } catch(e) {}
+}
+function addPointByName(name) {
+  const idx = _players.findIndex(p => p.name === name);
+  if (idx === -1) return;
+  _players[idx].score += 1;
+  savePlayers();
+  renderPointBoard();
 }
 window.togglePointBoard = () => {
   _pbOpen = !_pbOpen;
