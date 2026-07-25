@@ -411,7 +411,8 @@ window.showQuestionSelect = () => {
 };
 
 function renderGenreList() {
-  document.getElementById('genre-list').innerHTML = GENRES.map(g => `
+  const genres = window.GENRES || [];
+  document.getElementById('genre-list').innerHTML = genres.map(g => `
     <button class="genre-btn" style="--genre-color:${g.color}" onclick="selectGenre('${g.id}')">
       <div class="genre-btn-name">${g.name}</div>
       <div class="genre-btn-count">${g.questions.length}問</div>
@@ -421,7 +422,7 @@ function renderGenreList() {
 
 window.selectGenre = (genreId) => {
   currentGenreId = genreId;
-  const g = GENRES.find(g => g.id === genreId);
+  const g = (window.GENRES || []).find(g => g.id === genreId);
   document.getElementById('q-select-title').textContent = g.name;
   const L = ['A','B','C','D'];
   const typeLabel = { yontaku:'4択', hayaoshi:'早押し', kizyutsu:'記述' };
@@ -439,7 +440,7 @@ window.selectGenre = (genreId) => {
    問題出題
 ============================================================ */
 window.startQuestion = async (genreId, qIndex) => {
-  const g = GENRES.find(g => g.id === genreId);
+  const g = (window.GENRES || []).find(g => g.id === genreId);
   currentQuestion = { ...g.questions[qIndex], genreName: g.name, qIndex };
   const type = currentQuestion.type || 'yontaku';
 
@@ -750,6 +751,7 @@ function loadGenresForRoom() {
   } catch(e) { return base; }
 }
 const GENRES = loadGenresForRoom();
+window.GENRES = GENRES;
 </script>
 </body>
 </html>
