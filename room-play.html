@@ -264,12 +264,19 @@ const REJOIN_KEY = 'gundan_quiz_rejoin';
   try {
     const saved = localStorage.getItem(REJOIN_KEY);
     if (!saved) return;
-    const { savedRoomId, savedPlayerId, savedPlayerName } = JSON.parse(saved);
+    const { savedRoomId, savedPlayerId, savedPlayerName, savedJoinedAt } = JSON.parse(saved);
     if (!savedRoomId || !savedPlayerId) return;
 
     // ルームが存在するか確認
     const roomSnap = await get(ref(db, `rooms/${savedRoomId}`));
     if (!roomSnap.exists()) { localStorage.removeItem(REJOIN_KEY); return; }
+
+    // ルームが再作成されていないか確認（createdAtが参加時より新しければ別のルーム）
+    const roomData = roomSnap.val();
+    if (savedJoinedAt && roomData.createdAt && roomData.createdAt > savedJoinedAt) {
+      localStorage.removeItem(REJOIN_KEY);
+      return;
+    }
 
     // 自動再参加
     roomId     = savedRoomId;
@@ -312,7 +319,12 @@ window.joinRoom = async () => {
   await set(playerRef, { name: playerName, joinedAt: Date.now() });
 
   // 再参加用にlocalStorageに保存
-  localStorage.setItem(REJOIN_KEY, JSON.stringify({ savedRoomId: roomId, savedPlayerId: playerId, savedPlayerName: playerName }));
+  localStorage.setItem(REJOIN_KEY, JSON.stringify({
+    savedRoomId: roomId,
+    savedPlayerId: playerId,
+    savedPlayerName: playerName,
+    savedJoinedAt: Date.now()
+  }));
 
   document.getElementById('play-room-badge').textContent  = `ROOM: ${roomId}`;
   document.getElementById('play-name-badge').textContent  = playerName;
@@ -720,11 +732,26 @@ async function handleJiyuuAllRevealed(q) {
 function listenRoomStatus() {
   const roomRef = ref(db, `rooms/${roomId}`);
   onValue(roomRef, snap => {
-    if (!snap.exists() && roomId) {
-      alert('ルームが終了しました。');
+    if (!roomId) return;
+    if (!snap.exists()) {
+      // ルームが削除された
       localStorage.removeItem(REJOIN_KEY);
       roomId = null; playerId = null; playerName = null;
       showScreen('screen-join');
+    } else {
+      // ルームが再作成された場合（createdAtが参加時より新しい）
+      const data = snap.val();
+      const saved = localStorage.getItem(REJOIN_KEY);
+      if (saved) {
+        try {
+          const { savedJoinedAt } = JSON.parse(saved);
+          if (savedJoinedAt && data.createdAt && data.createdAt > savedJoinedAt) {
+            localStorage.removeItem(REJOIN_KEY);
+            roomId = null; playerId = null; playerName = null;
+            showScreen('screen-join');
+          }
+        } catch(e) {}
+      }
     }
   });
 }

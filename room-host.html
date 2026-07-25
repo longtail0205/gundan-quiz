@@ -680,11 +680,14 @@ window.createRoom = async () => {
   const inputId = document.getElementById('input-room-id-host').value.trim().toUpperCase();
   roomId = inputId || Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  // 古いデータを削除して新規作成
+  // 既存データを上書きして新規作成（removeしないことでゲスト側への通知を避ける）
   await set(ref(db, `rooms/${roomId}`), {
-    status: 'waiting',
-    createdAt: Date.now(),
-    currentQuestion: null
+    status:          'waiting',
+    createdAt:       Date.now(),
+    currentQuestion: null,
+    players:         null,
+    answers:         null,
+    hostPlayerId:    null
   });
 
   document.getElementById('room-id-display').textContent = roomId;
