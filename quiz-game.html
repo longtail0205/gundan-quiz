@@ -514,6 +514,7 @@ label.btn-export input[type="file"]:disabled {
         <select class="form-select" id="mqf-type" onchange="toggleQFormType()">
           <option value="yontaku">4択問題</option>
           <option value="hayaoshi">早押し問題</option>
+          <option value="kizyutsu">記述式問題</option>
         </select>
       </div>
       <div class="form-row">
@@ -584,6 +585,16 @@ label.btn-export input[type="file"]:disabled {
         <div class="form-row">
           <label class="form-label">正解（停止後に表示される答え）</label>
           <input class="form-input" id="mqf-answer" placeholder="例：吉宗" />
+        </div>
+      </div>
+    </div>
+    <!-- 記述式専用 -->
+    <div id="mqf-kizyutsu-section" style="display:none">
+      <div class="form-section">
+        <div class="form-section-title">正解テキスト</div>
+        <div class="form-row">
+          <label class="form-label">正解（ホストが判定の際に参照するテキスト）</label>
+          <input class="form-input" id="mqf-kizyutsu-answer" placeholder="例：織田信長" />
         </div>
       </div>
     </div>
@@ -1229,6 +1240,8 @@ function showManageQForm(qi) {
       (q.choices || ['','','','']).forEach((c, i) => { document.getElementById(`mqf-c${i}`).value = c; });
       const radio = document.querySelector(`input[name="correct"][value="${q.correct ?? 0}"]`);
       if (radio) radio.checked = true;
+    } else if (type === 'kizyutsu') {
+      document.getElementById('mqf-kizyutsu-answer').value = q.answer || '';
     } else {
       document.getElementById('mqf-answer').value = q.answer || '';
     }
@@ -1243,6 +1256,7 @@ function showManageQForm(qi) {
     document.getElementById('mqf-exp-audio').value     = '';
     ['mqf-c0','mqf-c1','mqf-c2','mqf-c3'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('mqf-answer').value        = '';
+    document.getElementById('mqf-kizyutsu-answer').value = '';
     const r = document.querySelector('input[name="correct"]');
     if (r) r.checked = true;
   }
@@ -1253,6 +1267,7 @@ function toggleQFormType() {
   const type = document.getElementById('mqf-type').value;
   document.getElementById('mqf-yontaku-section').style.display  = type === 'yontaku'  ? 'block' : 'none';
   document.getElementById('mqf-hayaoshi-section').style.display = type === 'hayaoshi' ? 'block' : 'none';
+  document.getElementById('mqf-kizyutsu-section').style.display = type === 'kizyutsu' ? 'block' : 'none';
 }
 /* ============================================================
    CSVインポート・エクスポート
@@ -1447,6 +1462,10 @@ function saveQuestion() {
     if (!correctEl) { alert('正解を選択してください'); return; }
     q.choices = choices;
     q.correct = parseInt(correctEl.value);
+  } else if (type === 'kizyutsu') {
+    const answer = document.getElementById('mqf-kizyutsu-answer').value.trim();
+    if (!answer) { alert('正解テキストを入力してください'); return; }
+    q.answer = answer;
   } else {
     const answer = document.getElementById('mqf-answer').value.trim();
     if (!answer) { alert('正解テキストを入力してください'); return; }

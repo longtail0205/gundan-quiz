@@ -148,6 +148,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,170,0,0.3);border-radius:3px;}
 @media(max-width:480px){.choices-display{grid-template-columns:1fr;}}
+
+/* その場で問題作成 */
+.adhoc-textarea{width:100%;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;font-family:'Noto Sans JP',sans-serif;font-size:15px;color:#fff;outline:none;resize:vertical;min-height:120px;line-height:1.6;}
+.adhoc-textarea:focus{border-color:rgba(255,215,0,0.6);}
+.adhoc-input{width:100%;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;font-family:'Noto Sans JP',sans-serif;font-size:14px;color:#fff;outline:none;}
+.adhoc-input:focus{border-color:rgba(255,215,0,0.6);}
 </style>
 </head>
 <body>
@@ -182,7 +188,51 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="card-title">参加者 <span id="player-count-label">0人</span></div>
     <div class="player-list" id="player-list"></div>
   </div>
-  <button class="btn btn-primary" onclick="showQuestionSelect()" id="btn-start-quiz">📝 問題を選んで出題する</button>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="showQuestionModeSelect()" id="btn-start-quiz">📝 問題を出題する</button>
+    <button class="btn btn-gold" onclick="showHostTransfer()">👑 ホストを交代</button>
+  </div>
+</div>
+
+<!-- ホスト交代 -->
+<div class="screen" id="screen-host-transfer">
+  <button class="back-btn" onclick="backToWaiting()">← もどる</button>
+  <div class="page-title">ホストを交代する</div>
+  <div class="card">
+    <div class="card-title">次のホストを選んでください</div>
+    <div id="host-transfer-list"></div>
+  </div>
+</div>
+
+<!-- 問題選択方法 -->
+<div class="screen" id="screen-question-mode">
+  <button class="back-btn" onclick="backToWaiting()">← もどる</button>
+  <div class="page-title">出題方法を選ぶ</div>
+  <div class="card" style="cursor:pointer;" onclick="showQuestionSelect()">
+    <div style="font-size:24px;margin-bottom:8px;">📚</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:18px;color:var(--gold);margin-bottom:6px;">既存の問題から選ぶ</div>
+    <div style="font-size:13px;color:var(--text-muted);">questions.jsに登録された問題を出題する</div>
+  </div>
+  <div class="card" style="cursor:pointer;margin-top:12px;" onclick="showAdHocQuestion()">
+    <div style="font-size:24px;margin-bottom:8px;">✏️</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:18px;color:var(--gold);margin-bottom:6px;">その場で問題を作る</div>
+    <div style="font-size:13px;color:var(--text-muted);">問題文と正解をその場で入力して出題する（記述式）</div>
+  </div>
+</div>
+
+<!-- その場で問題作成 -->
+<div class="screen" id="screen-adhoc">
+  <button class="back-btn" onclick="showScreen('screen-question-mode')">← もどる</button>
+  <div class="page-title">問題を作って出題</div>
+  <div class="card">
+    <div class="card-title">問題文</div>
+    <textarea class="adhoc-textarea" id="adhoc-text" placeholder="問題文を入力してください..."></textarea>
+  </div>
+  <div class="card">
+    <div class="card-title">正解（ホストのみ表示）</div>
+    <input class="adhoc-input" id="adhoc-answer" placeholder="正解を入力してください" />
+  </div>
+  <button class="btn btn-primary" onclick="startAdHocQuestion()">▶ この問題を出題する</button>
 </div>
 
 <!-- ジャンル選択 -->
@@ -339,9 +389,83 @@ window.backToWaiting = () => {
   showScreen('screen-waiting');
 };
 
+window.showQuestionModeSelect = () => {
+  showScreen('screen-question-mode');
+};
+
+window.showAdHocQuestion = () => {
+  document.getElementById('adhoc-text').value   = '';
+  document.getElementById('adhoc-answer').value = '';
+  showScreen('screen-adhoc');
+};
+
+window.startAdHocQuestion = async () => {
+  const text   = document.getElementById('adhoc-text').value.trim();
+  const answer = document.getElementById('adhoc-answer').value.trim();
+  if (!text)   { alert('問題文を入力してください'); return; }
+  if (!answer) { alert('正解を入力してください'); return; }
+
+  currentQuestion = { type: 'kizyutsu', text, answer, genreName: 'その場で作成', qIndex: -1 };
+
+  const qData = {
+    genreName: 'その場で作成',
+    type:      'kizyutsu',
+    text,
+    status:    'active',
+    startedAt:  Date.now()
+  };
+  await set(ref(db, `rooms/${roomId}/currentQuestion`), qData);
+  await remove(ref(db, `rooms/${roomId}/answers`));
+  kizyutsuJudges = {};
+
+  renderQuizHost();
+  listenAnswers();
+  showScreen('screen-quiz');
+};
+
+/* ホスト切り替え */
+window.showHostTransfer = () => {
+  get(ref(db, `rooms/${roomId}/players`)).then(snap => {
+    const players = snap.val() || {};
+    document.getElementById('host-transfer-list').innerHTML =
+      Object.entries(players).map(([id, p]) => `
+        <div class="player-item" style="cursor:pointer;" onclick="transferHostTo('${id}','${p.name}')">
+          <div class="player-avatar">${p.name.charAt(0)}</div>
+          <div class="player-name">${p.name}</div>
+          <div style="font-size:12px;color:var(--gold2);">👑 ホストにする</div>
+        </div>
+      `).join('') || '<div style="color:var(--text-muted);font-size:13px;">参加者がいません</div>';
+  });
+  showScreen('screen-host-transfer');
+};
+
+window.transferHostTo = async (playerId, playerName) => {
+  if (!confirm(`「${playerName}」をホストにしますか？\nあなたはホスト権限を失います。`)) return;
+  await update(ref(db, `rooms/${roomId}`), { hostPlayerId: playerId });
+  alert(`${playerName}にホストを引き継ぎました。\nこのページを閉じてください。`);
+};
+
 /* ============================================================
-   ルーム作成
+   ルーム作成・既存ルームへの復帰
 ============================================================ */
+// URLパラメータにroomがあれば既存ルームにホストとして復帰
+(async () => {
+  const urlParams = new URLSearchParams(location.search);
+  const urlRoom   = urlParams.get('room');
+  if (!urlRoom) return;
+  const snap = await get(ref(db, `rooms/${urlRoom}`));
+  if (!snap.exists()) return;
+  roomId = urlRoom;
+  document.getElementById('room-id-display').textContent = roomId;
+  const url = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}`;
+  document.getElementById('room-url-display').textContent = url;
+  document.getElementById('quiz-room-id').textContent = `ROOM: ${roomId}`;
+  _players = loadPlayers();
+  renderPointBoard();
+  listenPlayers();
+  showScreen('screen-waiting');
+})();
+
 window.createRoom = async () => {
   // 6桁のランダムなルームID
   roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -357,6 +481,8 @@ window.createRoom = async () => {
   document.getElementById('room-url-display').textContent = url;
   document.getElementById('quiz-room-id').textContent = `ROOM: ${roomId}`;
 
+  _players = loadPlayers();
+  renderPointBoard();
   listenPlayers();
   showScreen('screen-waiting');
 };
@@ -670,16 +796,16 @@ window.submitKizyutsuJudge = async () => {
 /* ============================================================
    ポイントボード
 ============================================================ */
-const PB_KEY = 'gundan_quiz_players';
-let _players = loadPlayers();
+const PB_KEY = () => `gundan_quiz_players_${roomId || 'default'}`;
+let _players = [];
 let _pbOpen  = false;
 
 function loadPlayers() {
-  try { const s = localStorage.getItem(PB_KEY); if (s) return JSON.parse(s); } catch(e) {}
+  try { const s = localStorage.getItem(PB_KEY()); if (s) return JSON.parse(s); } catch(e) {}
   return [];
 }
 function savePlayers() {
-  try { localStorage.setItem(PB_KEY, JSON.stringify(_players)); } catch(e) {}
+  try { localStorage.setItem(PB_KEY(), JSON.stringify(_players)); } catch(e) {}
 }
 window.togglePointBoard = () => {
   _pbOpen = !_pbOpen;

@@ -235,6 +235,36 @@ if (urlRoomId) {
   document.getElementById('input-room-id').value = urlRoomId.toUpperCase();
 }
 
+// 前回の参加情報をlocalStorageから復元して自動再参加を試みる
+const REJOIN_KEY = 'gundan_quiz_rejoin';
+(async () => {
+  try {
+    const saved = localStorage.getItem(REJOIN_KEY);
+    if (!saved) return;
+    const { savedRoomId, savedPlayerId, savedPlayerName } = JSON.parse(saved);
+    if (!savedRoomId || !savedPlayerId) return;
+
+    // ルームが存在するか確認
+    const roomSnap = await get(ref(db, `rooms/${savedRoomId}`));
+    if (!roomSnap.exists()) { localStorage.removeItem(REJOIN_KEY); return; }
+
+    // 自動再参加
+    roomId     = savedRoomId;
+    playerId   = savedPlayerId;
+    playerName = savedPlayerName;
+
+    // プレイヤー情報を再登録
+    await set(ref(db, `rooms/${roomId}/players/${playerId}`), { name: playerName, joinedAt: Date.now() });
+
+    document.getElementById('play-room-badge').textContent  = `ROOM: ${roomId}`;
+    document.getElementById('play-name-badge').textContent  = playerName;
+    document.getElementById('play-room-id-bar').textContent = `ROOM: ${roomId}`;
+
+    listenQuestion();
+    showScreen('screen-waiting');
+  } catch(e) {}
+})();
+
 /* ============================================================
    ルーム参加
 ============================================================ */
@@ -256,11 +286,15 @@ window.joinRoom = async () => {
   playerId = playerRef.key;
   await set(playerRef, { name: playerName, joinedAt: Date.now() });
 
+  // 再参加用にlocalStorageに保存
+  localStorage.setItem(REJOIN_KEY, JSON.stringify({ savedRoomId: roomId, savedPlayerId: playerId, savedPlayerName: playerName }));
+
   document.getElementById('play-room-badge').textContent  = `ROOM: ${roomId}`;
   document.getElementById('play-name-badge').textContent  = playerName;
   document.getElementById('play-room-id-bar').textContent = `ROOM: ${roomId}`;
 
   listenQuestion();
+  listenHostTransfer();
   showScreen('screen-waiting');
 };
 
@@ -285,7 +319,6 @@ function listenQuestion() {
         showScreen('screen-quiz');
       }
     } else if (q.status === 'closed') {
-      // 締め切り → 結果表示
       handleClosed(q);
     } else if (q.status === 'judged') {
       // 判定結果
@@ -521,6 +554,21 @@ function handleRevealed(q) {
         <div style="font-family:'Dela Gothic One',sans-serif;font-size:22px;color:var(--correct);">${q.answer}</div>
       </div>`;
   }
+}
+/* ============================================================
+   ホスト指名の監視
+============================================================ */
+function listenHostTransfer() {
+  const hostRef = ref(db, `rooms/${roomId}/hostPlayerId`);
+  onValue(hostRef, snap => {
+    const newHostId = snap.val();
+    if (newHostId && newHostId === playerId) {
+      if (confirm('あなたがホストに指名されました！\nホスト画面に移動しますか？')) {
+        const hostUrl = `${location.origin}${location.pathname.replace('room-play.html', 'room-host.html')}?room=${roomId}`;
+        location.href = hostUrl;
+      }
+    }
+  });
 }
 
 </script>
