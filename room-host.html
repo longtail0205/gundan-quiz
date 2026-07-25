@@ -726,5 +726,30 @@ window._firebaseReady = true;
 
 </script>
 <script src="questions.js"></script>
+<script>
+// questions.jsのDEFAULT_GENRESをGENRESとしてセット
+// localStorageとのマージ
+const LS_KEY_R = 'gundan_quiz_genres';
+function loadGenresForRoom() {
+  const base = JSON.parse(JSON.stringify(DEFAULT_GENRES));
+  try {
+    const saved = localStorage.getItem(LS_KEY_R);
+    if (!saved) return base;
+    const lsData = JSON.parse(saved);
+    lsData.forEach(lsGenre => {
+      const idx = base.findIndex(g => g.id === lsGenre.id);
+      if (idx !== -1) {
+        const lockedVal = base[idx].locked;
+        base[idx] = lsGenre;
+        if (lockedVal !== undefined) base[idx].locked = lockedVal;
+      } else {
+        base.push(lsGenre);
+      }
+    });
+    return base;
+  } catch(e) { return base; }
+}
+const GENRES = loadGenresForRoom();
+</script>
 </body>
 </html>
