@@ -168,6 +168,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="card">
     <div class="card-title">ルームを作成する</div>
     <div style="margin-bottom:12px;">
+      <label style="font-size:12px;color:var(--text-muted);font-weight:700;display:block;margin-bottom:6px;letter-spacing:0.05em;">あなたの名前（ホスト交代時に使用）</label>
+      <input class="adhoc-input" id="input-host-name" placeholder="例：たろう" maxlength="10" />
+    </div>
+    <div style="margin-bottom:12px;">
       <label style="font-size:12px;color:var(--text-muted);font-weight:700;display:block;margin-bottom:6px;letter-spacing:0.05em;">ルームID（空欄の場合はランダム生成）</label>
       <input class="adhoc-input" id="input-room-id-host" placeholder="例：GUNDAN（半角英数6文字まで）" maxlength="6" style="text-transform:uppercase;" />
     </div>
@@ -649,8 +653,8 @@ window.showHostTransfer = () => {
 
 window.transferHostTo = async (pid, pname) => {
   await update(ref(db, `rooms/${roomId}`), { hostPlayerId: pid });
-  // 元ホストは自動的に参加者画面に移動（名前はURLパラメータで渡す）
-  const playUrl = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}&name=${encodeURIComponent('ホスト')}`;
+  const hostName = window._hostName || 'ホスト';
+  const playUrl  = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}&name=${encodeURIComponent(hostName)}`;
   location.href = playUrl;
 };
 
@@ -663,7 +667,11 @@ window.transferHostTo = async (pid, pname) => {
   const urlRoom   = urlParams.get('room');
   if (!urlRoom) return;
   const snap = await get(ref(db, `rooms/${urlRoom}`));
-  if (!snap.exists()) return;
+  if (!snap.exists()) {
+    // URLからroomパラメータを除去してセットアップ画面に戻る
+    history.replaceState({}, '', location.pathname);
+    return;
+  }
   roomId = urlRoom;
   document.getElementById('room-id-display').textContent = roomId;
   const url = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}`;
@@ -674,10 +682,14 @@ window.transferHostTo = async (pid, pname) => {
   listenPlayers();
   showScreen('screen-waiting');
   initMasterMode();
+  // URLからroomパラメータを除去（次回アクセス時に自動復帰しないように）
+  history.replaceState({}, '', location.pathname);
 })();
 
 window.createRoom = async () => {
-  const inputId = document.getElementById('input-room-id-host').value.trim().toUpperCase();
+  const inputId   = document.getElementById('input-room-id-host').value.trim().toUpperCase();
+  const hostName  = document.getElementById('input-host-name').value.trim() || 'ホスト';
+  window._hostName = hostName;
   roomId = inputId || Math.random().toString(36).substring(2, 8).toUpperCase();
 
   // 既存データを上書きして新規作成（removeしないことでゲスト側への通知を避ける）

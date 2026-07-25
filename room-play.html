@@ -779,9 +779,10 @@ function listenHostTransfer() {
   onValue(hostRef, snap => {
     const newHostId = snap.val();
     if (newHostId && newHostId === playerId) {
-      // confirmなしで自動的にホスト画面に移動
-      const hostUrl = `${location.origin}${location.pathname.replace('room-play.html', 'room-host.html')}?room=${roomId}`;
-      location.href = hostUrl;
+      if (confirm('あなたがホストに指名されました！\nホスト画面に移動しますか？')) {
+        const hostUrl = `${location.origin}${location.pathname.replace('room-play.html', 'room-host.html')}?room=${roomId}`;
+        location.href = hostUrl;
+      }
     }
   });
 }
