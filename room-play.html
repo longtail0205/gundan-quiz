@@ -254,9 +254,9 @@ function showScreen(id) {
 ============================================================ */
 const urlParams = new URLSearchParams(location.search);
 const urlRoomId = urlParams.get('room');
-if (urlRoomId) {
-  document.getElementById('input-room-id').value = urlRoomId.toUpperCase();
-}
+const urlName   = urlParams.get('name');
+if (urlRoomId) document.getElementById('input-room-id').value = urlRoomId.toUpperCase();
+if (urlName)   document.getElementById('input-name').value    = urlName;
 
 // 前回の参加情報をlocalStorageから復元して自動再参加を試みる
 const REJOIN_KEY = 'gundan_quiz_rejoin';
@@ -779,10 +779,9 @@ function listenHostTransfer() {
   onValue(hostRef, snap => {
     const newHostId = snap.val();
     if (newHostId && newHostId === playerId) {
-      if (confirm('あなたがホストに指名されました！\nホスト画面に移動しますか？')) {
-        const hostUrl = `${location.origin}${location.pathname.replace('room-play.html', 'room-host.html')}?room=${roomId}`;
-        location.href = hostUrl;
-      }
+      // confirmなしで自動的にホスト画面に移動
+      const hostUrl = `${location.origin}${location.pathname.replace('room-play.html', 'room-host.html')}?room=${roomId}`;
+      location.href = hostUrl;
     }
   });
 }

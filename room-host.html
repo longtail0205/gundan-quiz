@@ -648,10 +648,10 @@ window.showHostTransfer = () => {
 };
 
 window.transferHostTo = async (pid, pname) => {
-  // 新しいホストのIDをFirebaseに書き込む（参加者側が検知してホスト画面に移動する）
   await update(ref(db, `rooms/${roomId}`), { hostPlayerId: pid });
-  // 元ホストはそのまま待機室に留まる（ホスト権限は失う）
-  backToWaiting();
+  // 元ホストは自動的に参加者画面に移動（名前はURLパラメータで渡す）
+  const playUrl = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}&name=${encodeURIComponent('ホスト')}`;
+  location.href = playUrl;
 };
 
 /* ============================================================
