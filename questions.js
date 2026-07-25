@@ -160,17 +160,64 @@ const DEFAULT_GENRES = [
     desc: "軍団長・長尾が知っている物について答えよ",
     color: "#ff2244",
     questions: [
-      { id:1,  type:"kizyutsu", title:"問題1",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:2,  type:"kizyutsu", title:"問題2",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:3,  type:"kizyutsu", title:"問題3",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:4,  type:"kizyutsu", title:"問題4",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:5,  type:"kizyutsu", title:"問題5",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:6,  type:"kizyutsu", title:"問題6",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:7,  type:"kizyutsu", title:"問題7",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:8,  type:"kizyutsu", title:"問題8",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:9,  type:"kizyutsu", title:"問題9",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
-      { id:10, type:"kizyutsu", title:"問題10", text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null }
-      // ★ 問題を追加する場合はここに追記
+      /* ── マンガ・アニメ ── */
+      { id:1,  type:"kizyutsu", title:"Q1",  text:"「鬼滅の刃」の主人公の名前は？",                                           media:null, audio:null, answer:"竈門炭治郎",     answers:"竈門炭治郎,かまどたんじろう,炭治郎",             nagaoType:"アニメ", explanation:null },
+      { id:2,  type:"kizyutsu", title:"Q2",  text:"「進撃の巨人」でエレンたちが暮らす壁の一番外側の名前は？",               media:null, audio:null, answer:"ウォール・マリア", answers:"ウォール・マリア,ウォールマリア,マリア",          nagaoType:"アニメ", explanation:null },
+      { id:3,  type:"kizyutsu", title:"Q3",  text:"「ワンピース」でルフィが食べた悪魔の実の名前は？",                       media:null, audio:null, answer:"ゴムゴムの実",    answers:"ゴムゴムの実,ごむごむのみ",                       nagaoType:"マンガ", explanation:null },
+      { id:4,  type:"kizyutsu", title:"Q4",  text:"「NARUTO」でナルトが最も得意とする忍術は？",                             media:null, audio:null, answer:"影分身の術",     answers:"影分身の術,かげぶんしんのじゅつ,影分身",          nagaoType:"マンガ", explanation:null },
+      { id:5,  type:"kizyutsu", title:"Q5",  text:"「ドラゴンボール」でベジータの戦闘力が「53万です」と言った敵は誰？",     media:null, audio:null, answer:"ザーボン",       answers:"ザーボン",                                        nagaoType:"アニメ", explanation:null },
+      { id:6,  type:"kizyutsu", title:"Q6",  text:"「銀魂」の主人公・坂田銀時が持つ木刀の名前は？",                         media:null, audio:null, answer:"洞爺湖",         answers:"洞爺湖,とうやこ",                                 nagaoType:"マンガ", explanation:null },
+      { id:7,  type:"kizyutsu", title:"Q7",  text:"「僕のヒーローアカデミア」で緑谷出久の個性の名前は？",                   media:null, audio:null, answer:"ワン・フォー・オール", answers:"ワン・フォー・オール,ワンフォーオール",          nagaoType:"アニメ", explanation:null },
+      { id:8,  type:"kizyutsu", title:"Q8",  text:"「鋼の錬金術師」でエドワードが右腕に持つのは何製の義手？",               media:null, audio:null, answer:"オートメイル",   answers:"オートメイル,automail",                           nagaoType:"マンガ", explanation:null },
+      { id:9,  type:"kizyutsu", title:"Q9",  text:"「Hunter×Hunter」でゴンの父親の名前は？",                               media:null, audio:null, answer:"ジン＝フリークス", answers:"ジン＝フリークス,ジン,ジンフリークス",           nagaoType:"マンガ", explanation:null },
+      { id:10, type:"kizyutsu", title:"Q10", text:"「SAO（ソードアート・オンライン）」の主人公の本名は？",                   media:null, audio:null, answer:"桐ヶ谷和人",     answers:"桐ヶ谷和人,きりがやかずと,キリト",               nagaoType:"アニメ", explanation:null },
+      { id:11, type:"kizyutsu", title:"Q11", text:"「東京喰種」の主人公・金木研が持つ赫子の種類は？",                       media:null, audio:null, answer:"甲赫",           answers:"甲赫,こうかく",                                   nagaoType:"マンガ", explanation:null },
+      { id:12, type:"kizyutsu", title:"Q12", text:"「はじめの一歩」で主人公・幕之内一歩の必殺技は？",                       media:null, audio:null, answer:"ガゾーリン",     answers:"ガゾーリン,デンプシーロール",                     nagaoType:"マンガ", explanation:null },
+      { id:13, type:"kizyutsu", title:"Q13", text:"「ダイヤのA」で主人公・沢村栄純のポジションは？",                         media:null, audio:null, answer:"ピッチャー",     answers:"ピッチャー,投手",                                 nagaoType:"マンガ", explanation:null },
+      { id:14, type:"kizyutsu", title:"Q14", text:"「ニセコイ」で一条楽が幼なじみとの約束の証として持つアイテムは？",       media:null, audio:null, answer:"ロケット",       answers:"ロケット,ペンダント",                             nagaoType:"マンガ", explanation:null },
+      { id:15, type:"kizyutsu", title:"Q15", text:"「ストライク・ザ・ブラッド」の主人公・暁古城の異名は？",                 media:null, audio:null, answer:"第四真祖",       answers:"第四真祖,だいよんしんそ",                         nagaoType:"アニメ", explanation:null },
+      { id:16, type:"kizyutsu", title:"Q16", text:"「IS（インフィニット・ストラトス）」で唯一ISを動かせる男性の名前は？",   media:null, audio:null, answer:"織斑一夏",       answers:"織斑一夏,おりむらいちか,一夏",                    nagaoType:"アニメ", explanation:null },
+      { id:17, type:"kizyutsu", title:"Q17", text:"「一騎当千」の主人公・孫策伯符が持つ勾玉の色は？",                       media:null, audio:null, answer:"緑",             answers:"緑,みどり,グリーン",                              nagaoType:"アニメ", explanation:null },
+      { id:18, type:"kizyutsu", title:"Q18", text:"「べるぜバブ」の主人公・男鹿辰巳が育てる赤ちゃん悪魔の名前は？",         media:null, audio:null, answer:"ベル坊",         answers:"ベル坊",                                          nagaoType:"マンガ", explanation:null },
+      { id:19, type:"kizyutsu", title:"Q19", text:"「これはゾンビですか？」の主人公・舞野あゆむが変身する職業は？",         media:null, audio:null, answer:"魔装少女",       answers:"魔装少女,まそうしょうじょ",                       nagaoType:"アニメ", explanation:null },
+      { id:20, type:"kizyutsu", title:"Q20", text:"「東京レイヴンズ」の主人公・土御門春虎の式神の名前は？",                 media:null, audio:null, answer:"コン",           answers:"コン",                                            nagaoType:"アニメ", explanation:null },
+      { id:21, type:"kizyutsu", title:"Q21", text:"「織田信奈の野望」でヒロインとして登場する織田信長の名前は？",           media:null, audio:null, answer:"織田信奈",       answers:"織田信奈,おだのぶな",                             nagaoType:"アニメ", explanation:null },
+      { id:22, type:"kizyutsu", title:"Q22", text:"「MAJOR」の主人公・本田吾郎が目指すポジションは？",                     media:null, audio:null, answer:"ピッチャー",     answers:"ピッチャー,投手",                                 nagaoType:"アニメ", explanation:null },
+      { id:23, type:"kizyutsu", title:"Q23", text:"「スーパーロボット大戦OG」に登場するサイバスターのパイロット名は？",     media:null, audio:null, answer:"マサキ・アンドー", answers:"マサキ・アンドー,マサキアンドー,アンドー",        nagaoType:"アニメ", explanation:null },
+      { id:24, type:"kizyutsu", title:"Q24", text:"「ハム太郎」でハム太郎の大好物は？",                                     media:null, audio:null, answer:"ひまわりのたね", answers:"ひまわりのたね,ひまわりの種,向日葵の種",          nagaoType:"アニメ", explanation:null },
+      { id:25, type:"kizyutsu", title:"Q25", text:"「まじかるカナン」の主人公・七海もなかの幼なじみの名前は？",             media:null, audio:null, answer:"雪村あきら",     answers:"雪村あきら,ゆきむらあきら,あきら",               nagaoType:"アニメ", explanation:null },
+      { id:26, type:"kizyutsu", title:"Q26", text:"「ペンギンの問題」の主人公ペンギンの名前は？",                           media:null, audio:null, answer:"木下ベッカム",   answers:"木下ベッカム,きのしたべっかむ,ベッカム",          nagaoType:"アニメ", explanation:null },
+      { id:27, type:"kizyutsu", title:"Q27", text:"「銀魂」で坂田銀時・志村新八・神楽が働く屋号は？",                       media:null, audio:null, answer:"万事屋銀ちゃん", answers:"万事屋銀ちゃん,万事屋,よろずや",                  nagaoType:"マンガ", explanation:null },
+      { id:28, type:"kizyutsu", title:"Q28", text:"「進撃の巨人」でリヴァイ兵長が所属する特別作戦班の通称は？",             media:null, audio:null, answer:"リヴァイ班",     answers:"リヴァイ班,リヴァイ兵長班",                       nagaoType:"マンガ", explanation:null },
+      { id:29, type:"kizyutsu", title:"Q29", text:"「ワンピース」でゾロの三刀流の技「三千世界」は何属性の技？",             media:null, audio:null, answer:"斬撃",           answers:"斬撃,ざんげき",                                   nagaoType:"マンガ", explanation:null },
+      { id:30, type:"kizyutsu", title:"Q30", text:"「鬼滅の刃」で炭治郎の妹・禰豆子が鬼になっても持ち続けた人間らしさとは？", media:null, audio:null, answer:"家族への愛",   answers:"家族への愛,人を傷つけない,人間への愛",            nagaoType:"アニメ", explanation:null },
+      /* ── パチンコ・スロット ── */
+      { id:31, type:"kizyutsu", title:"Q31", text:"三洋物産の大ヒットスロット「吉宗」が初登場したのは何年？",               media:null, audio:null, answer:"2003年",         answers:"2003年,2003,平成15年",                            nagaoType:"スロット", explanation:null },
+      { id:32, type:"kizyutsu", title:"Q32", text:"平和（HEIWA）のパチンコ機「CR花満開」シリーズの花の種類は？",           media:null, audio:null, answer:"桜",             answers:"桜,さくら,サクラ",                                nagaoType:"パチンコ", explanation:null },
+      { id:33, type:"kizyutsu", title:"Q33", text:"スロット「北斗の拳」のAT名は？",                                         media:null, audio:null, answer:"北斗強敵",       answers:"北斗強敵,ほくとごうてき",                         nagaoType:"スロット", explanation:null },
+      { id:34, type:"kizyutsu", title:"Q34", text:"「押忍！番長」シリーズの主人公の名前は？",                               media:null, audio:null, answer:"番長",           answers:"番長,ばんちょう",                                 nagaoType:"スロット", explanation:null },
+      { id:35, type:"kizyutsu", title:"Q35", text:"パチスロ「まどか☆マギカ」でほむらが持つ必殺技的な魔法の特徴は？",       media:null, audio:null, answer:"時間を止める",   answers:"時間を止める,時間停止,時を止める",                nagaoType:"スロット", explanation:null },
+      { id:36, type:"kizyutsu", title:"Q36", text:"「CR真・北斗無双」の甘デジ確変割合は何％？",                             media:null, audio:null, answer:"65%",            answers:"65%,65,六十五パーセント",                         nagaoType:"パチンコ", explanation:null },
+      { id:37, type:"kizyutsu", title:"Q37", text:"スロット「化物語」のART名は？",                                         media:null, audio:null, answer:"傷物語",         answers:"傷物語,きずものがたり",                           nagaoType:"スロット", explanation:null },
+      { id:38, type:"kizyutsu", title:"Q38", text:"「戦国乙女」シリーズでパチスロを出しているメーカーはどこ？",             media:null, audio:null, answer:"平和",           answers:"平和,HEIWA,ピーワールド",                         nagaoType:"スロット", explanation:null },
+      { id:39, type:"kizyutsu", title:"Q39", text:"パチンコ「CR花の慶次」の主人公・前田慶次の二つ名は？",                   media:null, audio:null, answer:"傾奇者",         answers:"傾奇者,かぶきもの",                               nagaoType:"パチンコ", explanation:null },
+      { id:40, type:"kizyutsu", title:"Q40", text:"スロット「ミリオンゴッド」シリーズのGOD揃い時の枚数は？",               media:null, audio:null, answer:"1000枚",         answers:"1000枚,千枚,1000",                                nagaoType:"スロット", explanation:null },
+      /* ── 混合・雑学系 ── */
+      { id:41, type:"kizyutsu", title:"Q41", text:"「ドラゴンボールZ」でフリーザの最終形態は第何形態？",                   media:null, audio:null, answer:"第4形態",        answers:"第4形態,第四形態,4,四",                           nagaoType:"アニメ", explanation:null },
+      { id:42, type:"kizyutsu", title:"Q42", text:"「NARUTO」でサスケが使う炎遁の術の名前は？",                             media:null, audio:null, answer:"豪火球の術",     answers:"豪火球の術,ごうかきゅうのじゅつ,火遁豪火球の術", nagaoType:"マンガ", explanation:null },
+      { id:43, type:"kizyutsu", title:"Q43", text:"「ワンピース」でサンジの夢は何という海に行くこと？",                     media:null, audio:null, answer:"オールブルー",   answers:"オールブルー",                                    nagaoType:"マンガ", explanation:null },
+      { id:44, type:"kizyutsu", title:"Q44", text:"「鋼の錬金術師」でアルフォンスの魂が定着しているのは何？",               media:null, audio:null, answer:"鎧",             answers:"鎧,よろい,甲冑",                                  nagaoType:"マンガ", explanation:null },
+      { id:45, type:"kizyutsu", title:"Q45", text:"「銀魂」で近藤勲が率いる組織の名前は？",                                 media:null, audio:null, answer:"真選組",         answers:"真選組,しんせんぐみ",                             nagaoType:"マンガ", explanation:null },
+      { id:46, type:"kizyutsu", title:"Q46", text:"「進撃の巨人」でエレンが最初に変身できた巨人の種類は？",                 media:null, audio:null, answer:"進撃の巨人",     answers:"進撃の巨人,しんげきのきょじん",                   nagaoType:"マンガ", explanation:null },
+      { id:47, type:"kizyutsu", title:"Q47", text:"スロット「吉宗」でボーナス中に出る殿様セリフで有名なのは「余の名は○○」何？", media:null, audio:null, answer:"吉宗", answers:"吉宗,よしむね",                                   nagaoType:"スロット", explanation:null },
+      { id:48, type:"kizyutsu", title:"Q48", text:"「Hunter×Hunter」でゴンとキルアが受験したハンター試験、最終試験の内容は？", media:null, audio:null, answer:"組み手",      answers:"組み手,くみて,格闘,バトル",                       nagaoType:"マンガ", explanation:null },
+      { id:49, type:"kizyutsu", title:"Q49", text:"「僕のヒーローアカデミア」でオールマイトの本名は？",                     media:null, audio:null, answer:"八木俊典",       answers:"八木俊典,やぎとしのり,トシノリ",                  nagaoType:"アニメ", explanation:null },
+      { id:50, type:"kizyutsu", title:"Q50", text:"「SAO」でキリトとアスナが結婚して暮らした家があるフロアは第何層？",       media:null, audio:null, answer:"第22層",         answers:"第22層,22層,22,二十二層",                         nagaoType:"アニメ", explanation:null }
     ]
   }
 ];
+
+// room-play.htmlからアクセスできるようwindowに公開
+if (typeof window !== 'undefined') {
+  window.DEFAULT_GENRES = DEFAULT_GENRES;
+}
