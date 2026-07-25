@@ -284,6 +284,8 @@ const REJOIN_KEY = 'gundan_quiz_rejoin';
     document.getElementById('play-room-id-bar').textContent = `ROOM: ${roomId}`;
 
     listenQuestion();
+    listenHostTransfer();
+    listenRoomStatus();
     showScreen('screen-waiting');
   } catch(e) {}
 })();
@@ -318,6 +320,7 @@ window.joinRoom = async () => {
 
   listenQuestion();
   listenHostTransfer();
+  listenRoomStatus();
   showScreen('screen-waiting');
 };
 
@@ -663,6 +666,37 @@ async function handleJiyuuAllRevealed(q) {
     </div>
   `).join('');
 }
+
+/* ============================================================
+   ルーム終了監視
+   ルームが削除されたら自動で参加画面に戻る
+============================================================ */
+function listenRoomStatus() {
+  const roomRef = ref(db, `rooms/${roomId}`);
+  onValue(roomRef, snap => {
+    if (!snap.exists() && roomId) {
+      alert('ルームが終了しました。');
+      localStorage.removeItem(REJOIN_KEY);
+      roomId = null; playerId = null; playerName = null;
+      showScreen('screen-join');
+    }
+  });
+}
+
+/* ============================================================
+   退出
+============================================================ */
+window.leaveRoom = async () => {
+  if (roomId && playerId) {
+    try { await remove(ref(db, `rooms/${roomId}/players/${playerId}`)); } catch(e) {}
+  }
+  localStorage.removeItem(REJOIN_KEY);
+  if (qListener && qRef) { off(qRef, 'value', qListener); qListener = null; }
+  roomId = null; playerId = null; playerName = null; currentType = null;
+  document.getElementById('input-room-id').value = '';
+  document.getElementById('input-name').value    = '';
+  showScreen('screen-join');
+};
 
 /* ============================================================
    ホスト指名の監視
