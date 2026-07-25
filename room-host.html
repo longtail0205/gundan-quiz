@@ -367,7 +367,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <!-- 次の問題へ -->
   <div style="margin-top:16px;">
     <div class="btn-row">
-      <button class="btn btn-gold" onclick="showQuestionSelect()">📝 次の問題を選ぶ</button>
+      <button class="btn btn-gold" onclick="showQuestionModeSelect()">📝 次の問題を選ぶ</button>
       <button class="btn btn-gold" onclick="backToWaiting()">🏠 待機室へ</button>
     </div>
   </div>
@@ -460,15 +460,13 @@ window.masterTriggerClick = () => {
 };
 
 function updateMasterModeUI() {
-  // バッジ表示
+  const isMaster = localStorage.getItem('gundan_master') === '1';
   const badge = document.getElementById('master-badge');
-  if (badge) badge.style.display = _masterMode ? 'block' : 'none';
-
-  // 既存問題ボタンの有効/無効
+  if (badge) badge.style.display = isMaster ? 'block' : 'none';
   const btn  = document.getElementById('btn-existing-question');
   const hint = document.getElementById('existing-hint');
   if (!btn) return;
-  if (_masterMode) {
+  if (isMaster) {
     btn.style.opacity     = '1';
     btn.style.cursor      = 'pointer';
     btn.style.borderColor = 'rgba(255,215,0,0.5)';
@@ -479,7 +477,7 @@ function updateMasterModeUI() {
     btn.style.cursor      = 'not-allowed';
     btn.style.borderColor = 'rgba(255,255,255,0.1)';
     btn.onclick           = null;
-    if (hint) hint.textContent = '「待機室」の文字を長押しでマスターモードを有効にしてください';
+    if (hint) hint.textContent = '「待機室」を5回クリックでマスターモードを有効にしてください';
   }
 }
 
@@ -1188,6 +1186,42 @@ function loadGenresForRoom() {
 }
 const GENRES = loadGenresForRoom();
 window.GENRES = GENRES;
+</script>
+
+<!-- マスターモード（moduleの外に置くことでonclickから直接呼べる） -->
+<script>
+let _masterClickCount = 0;
+let _masterClickTimer = null;
+function masterTriggerClick() {
+  _masterClickCount++;
+  clearTimeout(_masterClickTimer);
+  _masterClickTimer = setTimeout(() => { _masterClickCount = 0; }, 2000);
+  if (_masterClickCount >= 5) {
+    _masterClickCount = 0;
+    const current = localStorage.getItem('gundan_master') === '1';
+    const next = !current;
+    localStorage.setItem('gundan_master', next ? '1' : '0');
+    // バッジ表示
+    const badge = document.getElementById('master-badge');
+    if (badge) badge.style.display = next ? 'block' : 'none';
+    // 既存問題ボタン制御
+    const btn  = document.getElementById('btn-existing-question');
+    const hint = document.getElementById('existing-hint');
+    if (btn) {
+      btn.style.opacity     = next ? '1' : '0.4';
+      btn.style.cursor      = next ? 'pointer' : 'not-allowed';
+      btn.style.borderColor = next ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)';
+      btn.onclick           = next ? () => window.showQuestionSelect() : null;
+      if (hint) hint.textContent = next ? '登録済みの問題を出題する' : '「待機室」を5回クリックでマスターモードを有効にしてください';
+    }
+  }
+}
+// ページ読み込み時にバッジ状態を反映
+(function() {
+  const isMaster = localStorage.getItem('gundan_master') === '1';
+  const badge = document.getElementById('master-badge');
+  if (badge) badge.style.display = isMaster ? 'block' : 'none';
+})();
 </script>
 </body>
 </html>

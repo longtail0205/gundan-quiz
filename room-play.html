@@ -336,7 +336,6 @@ function listenQuestion() {
     const type = q.type || 'yontaku';
 
     if (q.status === 'active') {
-      // 新しい問題が来た
       if (currentType !== type || q.startedAt !== window._lastStartedAt) {
         window._lastStartedAt = q.startedAt;
         currentType = type;
@@ -345,7 +344,17 @@ function listenQuestion() {
         showScreen('screen-quiz');
       }
     } else if (q.status === 'closed') {
-      handleClosed(q);
+      // 記述式：kizyutsuRevealedの変化も反映
+      if (type === 'kizyutsu') {
+        if (!window._kizyutsuClosedHandled) {
+          window._kizyutsuClosedHandled = true;
+          handleClosed(q);
+        } else if (q.kizyutsuRevealed) {
+          updateKizyutsuRevealedPlay(q.kizyutsuRevealed);
+        }
+      } else {
+        handleClosed(q);
+      }
     } else if (q.status === 'jiyuu_closed') {
       handleJiyuuClosed(q);
     } else if (q.status === 'jiyuu_all_revealed') {
@@ -355,7 +364,6 @@ function listenQuestion() {
     } else if (q.status === 'revealed') {
       handleRevealed(q);
     } else if (q.jiyuuRevealed) {
-      // 一人ずつ公開の更新
       handleJiyuuPartialReveal(q);
     }
   });
@@ -367,6 +375,7 @@ function listenQuestion() {
 function renderQuestion(q) {
   const type = q.type || 'yontaku';
   const L    = ['A','B','C','D'];
+  window._kizyutsuClosedHandled = false; // 記述式締め切りフラグをリセット
 
   document.getElementById('play-badge').textContent    = q.genreName || '';
   document.getElementById('play-question').textContent = q.text || '';
@@ -572,22 +581,21 @@ async function handleClosed(q) {
     document.getElementById('play-results-area').style.display  = 'block';
     document.getElementById('kizyutsu-input-area').style.display = 'none';
     document.getElementById('kizyutsu-sent-msg').style.display   = 'none';
-
-    // kizyutsuRevealedの変化を監視して一人ずつ表示
-    onValue(ref(db, `rooms/${roomId}/currentQuestion/kizyutsuRevealed`), snap => {
-      const revealed = snap.val() || {};
-      Object.entries(revealed).forEach(([id, text]) => {
-        const textEl = document.getElementById(`ptext-${id}`);
-        if (textEl && textEl.textContent === '？？？') {
-          textEl.textContent = text;
-          textEl.style.color = '#fff';
-          textEl.style.letterSpacing = '';
-          const el = document.getElementById(`pans-${id}`);
-          if (el) { el.style.borderColor = 'rgba(100,180,255,0.3)'; el.style.background = 'rgba(100,180,255,0.05)'; }
-        }
-      });
-    });
   }
+}
+
+// 記述式の公開済み回答を反映
+function updateKizyutsuRevealedPlay(revealed) {
+  Object.entries(revealed).forEach(([id, text]) => {
+    const textEl = document.getElementById(`ptext-${id}`);
+    if (textEl && textEl.textContent === '？？？') {
+      textEl.textContent = text;
+      textEl.style.color = '#fff';
+      textEl.style.letterSpacing = '';
+      const el = document.getElementById(`pans-${id}`);
+      if (el) { el.style.borderColor = 'rgba(100,180,255,0.3)'; el.style.background = 'rgba(100,180,255,0.05)'; }
+    }
+  });
 }
 
 /* ============================================================
