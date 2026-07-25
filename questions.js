@@ -151,5 +151,26 @@ const DEFAULT_GENRES = [
       { id:31, type:"kizyutsu", title:"Q31 このキャラクターの名前は？", text:"このキャラクターの名前は？", media:"images/character/q31.png", audio:null, answer:"橘真里花（ニセコイ）",             explanation:null },
       { id:32, type:"kizyutsu", title:"Q32 このキャラクターの名前は？", text:"このキャラクターの名前は？", media:"images/character/q32.png", audio:null, answer:"桐崎千棘（ニセコイ）",             explanation:null }
     ]
+  },
+  {
+    id: "nagao",
+    name: "軍団長からの挑戦状",
+    logo: null,
+    logoText: "NAGAO",
+    desc: "軍団長・長尾が知っている物について答えよ",
+    color: "#ff2244",
+    questions: [
+      { id:1,  type:"kizyutsu", title:"問題1",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:2,  type:"kizyutsu", title:"問題2",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:3,  type:"kizyutsu", title:"問題3",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:4,  type:"kizyutsu", title:"問題4",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:5,  type:"kizyutsu", title:"問題5",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:6,  type:"kizyutsu", title:"問題6",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:7,  type:"kizyutsu", title:"問題7",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:8,  type:"kizyutsu", title:"問題8",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:9,  type:"kizyutsu", title:"問題9",  text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null },
+      { id:10, type:"kizyutsu", title:"問題10", text:"問題文をここに入力", media:null, audio:null, answer:"正解をここに入力", answers:"正解をここに入力,ひらがなの正解,別の正解", nagaoType:"未分類", explanation:null }
+      // ★ 問題を追加する場合はここに追記
+    ]
   }
 ];

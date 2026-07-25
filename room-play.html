@@ -126,7 +126,74 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- 待機室 -->
 <div class="screen" id="screen-waiting">
+
+<!-- 待機室 -->
+<div class="screen" id="screen-waiting">
   <div class="waiting-room">
+  <div style="text-align:center;padding:32px 0 24px;">
+    <div style="font-size:48px;margin-bottom:12px;">👑</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(22px,5vw,34px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">軍団長からの挑戦状</div>
+    <div style="background:rgba(255,34,68,0.08);border:1.5px solid rgba(255,34,68,0.3);border-radius:var(--radius);padding:16px 20px;margin:0 0 24px;text-align:left;line-height:1.8;font-size:14px;color:#ddd;">
+      軍団長・長尾が知っている物について、どれだけ答えられるか挑戦してみよ！<br>
+      アニメ・マンガ・パチスロ・その他もろもろ…<br>
+      軍団長の知識の深さを思い知れ！
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">問題数を選んでスタート</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-primary" onclick="startNagaoQuiz(10)">🔥 10問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startNagaoQuiz(30)" style="background:linear-gradient(135deg,#cc6600,#993300);">💪 30問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startNagaoQuiz(50)" style="background:linear-gradient(135deg,#880000,#550000);">💀 50問チャレンジ</button>
+    </div>
+    <div id="nagao-q-count" style="font-size:12px;color:var(--text-muted);margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- NAGAOクイズ画面 -->
+<div class="screen" id="screen-nagao-quiz">
+  <div class="status-bar">
+    <div class="status-dot active"></div>
+    <span id="nagao-progress-label">1 / 10</span>
+    <div style="flex:1;margin:0 10px;">
+      <div class="progress-bar"><div class="progress-fill" id="nagao-progress-fill" style="width:10%"></div></div>
+    </div>
+    <span style="font-size:11px;color:var(--gold2);font-weight:700;" id="nagao-score-label">0正解</span>
+  </div>
+  <div class="quiz-card" style="margin-bottom:16px;">
+    <div class="quiz-badge" id="nagao-badge">軍団長からの挑戦状</div>
+    <div class="quiz-media" id="nagao-media"></div>
+    <div class="quiz-question" id="nagao-question">問題文</div>
+  </div>
+  <!-- 回答入力エリア -->
+  <div id="nagao-input-area">
+    <textarea class="kizyutsu-textarea" id="nagao-answer-input" placeholder="回答を入力..."></textarea>
+    <button class="btn btn-primary" onclick="submitNagaoAnswer()" style="margin-top:8px;">✉️ 回答する</button>
+  </div>
+  <!-- 正解表示エリア -->
+  <div id="nagao-result-area" style="display:none;">
+    <div id="nagao-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
+    <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">💡 正解</div>
+      <div style="font-size:18px;font-weight:900;color:var(--correct);" id="nagao-correct-display"></div>
+    </div>
+    <div id="nagao-explanation-area" style="display:none;background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--correct);margin-bottom:4px;">📖 解説</div>
+      <div style="font-size:13px;color:#ccc;" id="nagao-explanation-text"></div>
+    </div>
+    <button class="btn btn-gold" id="nagao-next-btn" onclick="nextNagaoQuestion()">次の問題へ →</button>
+  </div>
+</div>
+
+<!-- NAGAO結果画面 -->
+<div class="screen" id="screen-nagao-result">
+  <div style="text-align:center;padding:32px 0;">
+    <div style="font-size:56px;margin-bottom:16px;" id="nagao-result-emoji">🏆</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:28px;color:var(--gold);margin-bottom:8px;">結果発表</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:64px;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6);" id="nagao-result-rate">0%</div>
+    <div style="font-size:16px;color:#ddd;margin:8px 0 24px;" id="nagao-result-detail"></div>
+    <div style="background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;text-align:left;" id="nagao-result-list"></div>
+    <button class="btn btn-primary" onclick="backToNagaoTop()">🔄 もう一度挑戦</button>
+  </div>
+</div>
     <div class="waiting-icon">⏳</div>
     <div class="room-badge" id="play-room-badge">ROOM: ----</div>
     <div class="player-name-badge" id="play-name-badge">名前</div>
@@ -212,6 +279,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 </div>
 
+<script src="questions.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, get, push, onValue, update, remove, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -283,6 +351,12 @@ const REJOIN_KEY = 'gundan_quiz_rejoin';
     playerId   = savedPlayerId;
     playerName = savedPlayerName;
 
+    // 古いhostPlayerIdが残っている場合はクリア（誤検知防止）
+    const currentHostId = roomData.hostPlayerId;
+    if (currentHostId && currentHostId === playerId) {
+      await update(ref(db, `rooms/${roomId}`), { hostPlayerId: null });
+    }
+
     // プレイヤー情報を再登録
     await set(ref(db, `rooms/${roomId}/players/${playerId}`), { name: playerName, joinedAt: Date.now() });
 
@@ -305,6 +379,12 @@ window.joinRoom = async () => {
   const inputName   = document.getElementById('input-name').value.trim();
 
   if (!inputRoomId || !inputName) { alert('ルームIDと名前を入力してください'); return; }
+
+  // NAGAOルームの特別処理
+  if (inputRoomId === 'NAGAO') {
+    showNagaoTop();
+    return;
+  }
 
   // ルームの存在確認
   const roomSnap = await get(ref(db, `rooms/${inputRoomId}`));
@@ -778,14 +858,170 @@ function listenHostTransfer() {
   const hostRef = ref(db, `rooms/${roomId}/hostPlayerId`);
   onValue(hostRef, snap => {
     const newHostId = snap.val();
-    if (newHostId && newHostId === playerId) {
-      if (confirm('あなたがホストに指名されました！\nホスト画面に移動しますか？')) {
-        const hostUrl = `${location.origin}${location.pathname.replace('room-play.html', 'room-host.html')}?room=${roomId}`;
-        location.href = hostUrl;
-      }
+    // playerId未設定 or 自分でない場合は無視
+    if (!playerId || !newHostId || newHostId !== playerId) return;
+    // 既にホスト画面にいる場合は無視
+    if (location.pathname.includes('room-host.html')) return;
+    if (confirm('あなたがホストに指名されました！\nホスト画面に移動しますか？')) {
+      const hostUrl = `${location.origin}${location.pathname.replace('room-play.html', 'room-host.html')}?room=${roomId}`;
+      location.href = hostUrl;
     }
   });
 }
+
+/* ============================================================
+   NAGAOクイズ（ソロプレイ）
+============================================================ */
+let _nagaoQueue   = [];
+let _nagaoIndex   = 0;
+let _nagaoScore   = 0;
+let _nagaoTotal   = 0;
+let _nagaoResults = [];
+
+function showNagaoTop() {
+  // NAGAO専用問題を取得
+  const nagaoGenre = (window.DEFAULT_GENRES || []).find(g => g.id === 'nagao')
+                  || (window.GENRES        || []).find(g => g.id === 'nagao');
+  const count = nagaoGenre ? nagaoGenre.questions.length : 0;
+  const el = document.getElementById('nagao-q-count');
+  if (el) el.textContent = `現在の問題数：${count}問`;
+  showScreen('screen-nagao-top');
+}
+
+window.startNagaoQuiz = (num) => {
+  const nagaoGenre = (window.DEFAULT_GENRES || []).find(g => g.id === 'nagao')
+                  || (window.GENRES        || []).find(g => g.id === 'nagao');
+  if (!nagaoGenre || nagaoGenre.questions.length === 0) {
+    alert('問題がまだ登録されていません');
+    return;
+  }
+  // シャッフルして指定数取得
+  const shuffled = [...nagaoGenre.questions].sort(() => Math.random() - 0.5);
+  _nagaoQueue   = shuffled.slice(0, Math.min(num, shuffled.length));
+  _nagaoIndex   = 0;
+  _nagaoScore   = 0;
+  _nagaoTotal   = _nagaoQueue.length;
+  _nagaoResults = [];
+  showNagaoQuestion();
+};
+
+function showNagaoQuestion() {
+  const q = _nagaoQueue[_nagaoIndex];
+
+  // プログレス更新
+  document.getElementById('nagao-progress-label').textContent = `${_nagaoIndex + 1} / ${_nagaoTotal}`;
+  document.getElementById('nagao-progress-fill').style.width  = `${((_nagaoIndex + 1) / _nagaoTotal) * 100}%`;
+  document.getElementById('nagao-score-label').textContent    = `${_nagaoScore}正解`;
+  document.getElementById('nagao-question').textContent       = q.text;
+
+  // メディア
+  const md = document.getElementById('nagao-media');
+  if (q.media) {
+    const isV = /\.(mp4|webm|ogg)$/i.test(q.media);
+    md.innerHTML = isV
+      ? `<video controls style="width:100%;border-radius:10px;margin-bottom:12px;"><source src="${q.media}"></video>`
+      : `<img src="${q.media}" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">`;
+  } else { md.innerHTML = ''; }
+
+  // 入力エリアをリセット
+  document.getElementById('nagao-answer-input').value = '';
+  document.getElementById('nagao-answer-input').disabled = false;
+  document.getElementById('nagao-input-area').style.display  = 'block';
+  document.getElementById('nagao-result-area').style.display = 'none';
+
+  // 最後の問題は「結果を見る」に変更
+  const nextBtn = document.getElementById('nagao-next-btn');
+  if (nextBtn) nextBtn.textContent = _nagaoIndex === _nagaoTotal - 1 ? '結果を見る 🏆' : '次の問題へ →';
+
+  showScreen('screen-nagao-quiz');
+}
+
+window.submitNagaoAnswer = () => {
+  const q      = _nagaoQueue[_nagaoIndex];
+  const input  = document.getElementById('nagao-answer-input').value.trim();
+
+  // 複数正解チェック（answersフィールドがあればカンマ区切りで分割して比較）
+  const mainAnswer = (q.answer || '').trim();
+  const allAnswers = q.answers
+    ? q.answers.split(',').map(a => a.trim()).filter(a => a)
+    : [mainAnswer];
+  // mainAnswerも含める
+  if (!allAnswers.includes(mainAnswer)) allAnswers.unshift(mainAnswer);
+
+  const isCorrect = allAnswers.some(a => a === input);
+
+  if (isCorrect) _nagaoScore++;
+  _nagaoResults.push({ q, input, isCorrect });
+
+  // 入力エリアを非表示
+  document.getElementById('nagao-answer-input').disabled = true;
+  document.getElementById('nagao-input-area').style.display  = 'none';
+  document.getElementById('nagao-result-area').style.display = 'block';
+
+  // 判定表示
+  const judgeEl = document.getElementById('nagao-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = `<div style="font-family:'Dela Gothic One',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>`;
+    judgeEl.style.background = 'rgba(0,255,170,0.05)';
+    judgeEl.style.border     = '1.5px solid rgba(0,255,170,0.3)';
+  } else {
+    judgeEl.innerHTML = `
+      <div style="font-family:'Dela Gothic One',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:8px;">あなたの回答：${input || '（未入力）'}</div>`;
+    judgeEl.style.background = 'rgba(255,51,85,0.05)';
+    judgeEl.style.border     = '1.5px solid rgba(255,51,85,0.3)';
+  }
+
+  // 正解表示
+  document.getElementById('nagao-correct-display').textContent = correct;
+
+  // 解説表示
+  if (q.explanation) {
+    document.getElementById('nagao-explanation-text').textContent = q.explanation;
+    document.getElementById('nagao-explanation-area').style.display = 'block';
+  } else {
+    document.getElementById('nagao-explanation-area').style.display = 'none';
+  }
+};
+
+window.nextNagaoQuestion = () => {
+  _nagaoIndex++;
+  if (_nagaoIndex >= _nagaoTotal) {
+    showNagaoResult();
+  } else {
+    showNagaoQuestion();
+  }
+};
+
+function showNagaoResult() {
+  const rate    = Math.round((_nagaoScore / _nagaoTotal) * 100);
+  let emoji = '😢';
+  if (rate >= 90) emoji = '🏆';
+  else if (rate >= 70) emoji = '🎉';
+  else if (rate >= 50) emoji = '👍';
+  else if (rate >= 30) emoji = '😅';
+
+  document.getElementById('nagao-result-emoji').textContent  = emoji;
+  document.getElementById('nagao-result-rate').textContent   = `${rate}%`;
+  document.getElementById('nagao-result-detail').textContent = `${_nagaoTotal}問中 ${_nagaoScore}問正解`;
+
+  // 結果一覧
+  document.getElementById('nagao-result-list').innerHTML = _nagaoResults.map((r, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <span style="font-size:18px;">${r.isCorrect ? '✅' : '❌'}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.q.text}</div>
+        ${!r.isCorrect ? `<div style="font-size:11px;color:var(--text-muted);">正解：${r.q.answer}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  showScreen('screen-nagao-result');
+}
+
+window.backToNagaoTop = () => {
+  showNagaoTop();
+};
 
 </script>
 </body>

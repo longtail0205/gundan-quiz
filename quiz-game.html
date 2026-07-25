@@ -611,6 +611,21 @@ label.btn-export input[type="file"]:disabled {
         </div>
       </div>
     </div>
+    <!-- NAGAO専用フィールド -->
+    <div id="mqf-nagao-section" style="display:none">
+      <div class="form-section">
+        <div class="form-section-title">NAGAO専用設定</div>
+        <div class="form-row">
+          <label class="form-label">複数正解（カンマ区切り・メインの正解を最初に）</label>
+          <input class="form-input" id="mqf-answers" placeholder="例：織田信長,おだのぶなが,ノブナガ" />
+          <p class="form-note">最初に入力した回答が正解表示に使われます。空欄の場合は上の正解テキストのみ使用。</p>
+        </div>
+        <div class="form-row">
+          <label class="form-label">問題タイプ（例：アニメ、パチスロ、キャラクター）</label>
+          <input class="form-input" id="mqf-nagao-type" placeholder="例：アニメ" />
+        </div>
+      </div>
+    </div>
     <div class="form-section">
       <div class="form-section-title">解説（任意）</div>
       <div class="form-row">
@@ -1259,6 +1274,8 @@ function showManageQForm(qi) {
     document.getElementById('mqf-explanation').value   = q.explanation || '';
     document.getElementById('mqf-exp-media').value     = q.explanationMedia || '';
     document.getElementById('mqf-exp-audio').value     = q.explanationAudio || '';
+    document.getElementById('mqf-answers').value       = q.answers || '';
+    document.getElementById('mqf-nagao-type').value    = q.nagaoType || '';
     if (type === 'yontaku') {
       (q.choices || ['','','','']).forEach((c, i) => { document.getElementById(`mqf-c${i}`).value = c; });
       const radio = document.querySelector(`input[name="correct"][value="${q.correct ?? 0}"]`);
@@ -1277,6 +1294,8 @@ function showManageQForm(qi) {
     document.getElementById('mqf-explanation').value   = '';
     document.getElementById('mqf-exp-media').value     = '';
     document.getElementById('mqf-exp-audio').value     = '';
+    document.getElementById('mqf-answers').value       = '';
+    document.getElementById('mqf-nagao-type').value    = '';
     ['mqf-c0','mqf-c1','mqf-c2','mqf-c3'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('mqf-answer').value        = '';
     document.getElementById('mqf-kizyutsu-answer').value = '';
@@ -1292,6 +1311,8 @@ function toggleQFormType() {
   document.getElementById('mqf-hayaoshi-section').style.display = type === 'hayaoshi' ? 'block' : 'none';
   document.getElementById('mqf-kizyutsu-section').style.display = type === 'kizyutsu' ? 'block' : 'none';
   document.getElementById('mqf-jiyuu-section').style.display    = type === 'jiyuu'    ? 'block' : 'none';
+  // kizyutsuのときだけNAGAO専用フィールドを表示
+  document.getElementById('mqf-nagao-section').style.display    = type === 'kizyutsu' ? 'block' : 'none';
 }
 /* ============================================================
    CSVインポート・エクスポート
@@ -1477,8 +1498,10 @@ function saveQuestion() {
   const explanation      = document.getElementById('mqf-explanation').value.trim() || null;
   const explanationMedia = document.getElementById('mqf-exp-media').value.trim() || null;
   const explanationAudio = document.getElementById('mqf-exp-audio').value.trim() || null;
+  const answers          = document.getElementById('mqf-answers').value.trim() || null;
+  const nagaoType        = document.getElementById('mqf-nagao-type').value.trim() || null;
   if (!text) { alert('問題文は必須です'); return; }
-  let q = { type, title: title || text, text, media, audio, explanation, explanationMedia, explanationAudio };
+  let q = { type, title: title || text, text, media, audio, explanation, explanationMedia, explanationAudio, answers, nagaoType };
   if (type === 'yontaku') {
     const choices = [0,1,2,3].map(i => document.getElementById(`mqf-c${i}`).value.trim());
     if (choices.some(c => !c)) { alert('選択肢A〜Dを全て入力してください'); return; }
