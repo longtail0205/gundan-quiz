@@ -381,6 +381,7 @@ function renderQuestion(q) {
   const L    = ['A','B','C','D'];
   window._kizyutsuClosedHandled = false;
   window._jiyuuClosedHandled    = false;
+  window._kizyutsuAnswerShown   = false;
   // 前の問題の正解表示をリセット
   const prevAns = document.getElementById('kizyutsu-answer-display');
   if (prevAns) prevAns.remove();
@@ -589,13 +590,16 @@ async function handleClosed(q) {
     document.getElementById('play-results-area').style.display  = 'block';
     document.getElementById('kizyutsu-input-area').style.display = 'none';
     document.getElementById('kizyutsu-sent-msg').style.display   = 'none';
+
+    // 既にkizyutsuAnswerが来ていれば即表示
+    if (q.kizyutsuAnswer) showKizyutsuAnswerPlay(q.kizyutsuAnswer);
   }
 }
 
 // 記述式の正解をゲスト側に表示
 function showKizyutsuAnswerPlay(answer) {
-  // 既に表示済みなら何もしない
-  if (document.getElementById('kizyutsu-answer-display')) return;
+  if (window._kizyutsuAnswerShown) return;
+  window._kizyutsuAnswerShown = true;
   const resultsArea = document.getElementById('play-results-area');
   if (!resultsArea) return;
   const el = document.createElement('div');
