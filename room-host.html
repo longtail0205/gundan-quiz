@@ -173,7 +173,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- 待機室 -->
 <div class="screen" id="screen-waiting">
-  <div class="page-title">待機室</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div class="page-title" id="master-trigger" style="cursor:default;user-select:none;margin-bottom:0;">待機室</div>
+    <div id="master-badge" style="display:none;background:rgba(255,215,0,0.15);border:1.5px solid var(--gold);border-radius:50px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--gold);">👑 マスターモード</div>
+  </div>
   <div class="status-bar">
     <div class="status-dot active" id="status-dot"></div>
     <span id="status-text">参加者を待っています...</span>
@@ -415,7 +418,7 @@ window.backToWaiting = () => {
 };
 
 /* ============================================================
-   マスターモード（タイトルを3秒長押しで切り替え）
+   マスターモード（待機室タイトルを3秒長押しで切り替え）
 ============================================================ */
 let _masterMode     = localStorage.getItem('gundan_master') === '1';
 let _longPressTimer = null;
@@ -428,7 +431,6 @@ function initMasterMode() {
       _masterMode = !_masterMode;
       localStorage.setItem('gundan_master', _masterMode ? '1' : '0');
       updateMasterModeUI();
-      alert(_masterMode ? '🔓 マスターモード ON\n既存問題が選べるようになりました' : '🔒 マスターモード OFF');
     }, 3000);
   });
   titleEl.addEventListener('pointerup',    () => clearTimeout(_longPressTimer));
@@ -437,24 +439,26 @@ function initMasterMode() {
 }
 
 function updateMasterModeUI() {
-  const btn = document.getElementById('btn-existing-question');
+  // バッジ表示
+  const badge = document.getElementById('master-badge');
+  if (badge) badge.style.display = _masterMode ? 'block' : 'none';
+
+  // 既存問題ボタンの有効/無効
+  const btn  = document.getElementById('btn-existing-question');
   const hint = document.getElementById('existing-hint');
   if (!btn) return;
   if (_masterMode) {
-    btn.style.opacity    = '1';
-    btn.style.cursor     = 'pointer';
+    btn.style.opacity     = '1';
+    btn.style.cursor      = 'pointer';
     btn.style.borderColor = 'rgba(255,215,0,0.5)';
-    btn.onclick          = () => showQuestionSelect();
+    btn.onclick           = () => showQuestionSelect();
     if (hint) hint.textContent = '登録済みの問題を出題する';
-    // タイトルも光らせる
-    const titleEl = document.getElementById('master-trigger');
-    if (titleEl) titleEl.style.textShadow = '0 0 20px rgba(255,215,0,1),0 0 40px rgba(255,170,0,0.8),3px 3px 0 #7a4400';
   } else {
-    btn.style.opacity    = '0.4';
-    btn.style.cursor     = 'not-allowed';
+    btn.style.opacity     = '0.4';
+    btn.style.cursor      = 'not-allowed';
     btn.style.borderColor = 'rgba(255,255,255,0.1)';
-    btn.onclick          = null;
-    if (hint) hint.textContent = 'タイトルを長押しでマスターモードを有効にしてください';
+    btn.onclick           = null;
+    if (hint) hint.textContent = '「待機室」の文字を長押しでマスターモードを有効にしてください';
   }
 }
 
@@ -509,10 +513,9 @@ window.showHostTransfer = () => {
   showScreen('screen-host-transfer');
 };
 
-window.transferHostTo = async (playerId, playerName) => {
-  if (!confirm(`「${playerName}」をホストにしますか？\nあなたはホスト権限を失います。`)) return;
-  await update(ref(db, `rooms/${roomId}`), { hostPlayerId: playerId });
-  alert(`${playerName}にホストを引き継ぎました。\nこのページを閉じてください。`);
+window.transferHostTo = async (pid, pname) => {
+  await update(ref(db, `rooms/${roomId}`), { hostPlayerId: pid });
+  backToWaiting();
 };
 
 /* ============================================================
@@ -561,7 +564,16 @@ window.createRoom = async () => {
 
 window.copyRoomUrl = () => {
   const url = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}`;
-  navigator.clipboard.writeText(url).then(() => alert('参加URLをコピーしました！\nLINEで参加者に送ってください。\n\n' + url));
+  // navigator.clipboardが使えない環境でも動くinput経由コピー
+  const el = document.createElement('input');
+  el.value = url;
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+  // URLを表示欄に反映（コピー完了の視覚的フィードバック）
+  const btn = document.querySelector('button[onclick="copyRoomUrl()"]');
+  if (btn) { btn.textContent = '✅ コピーしました'; setTimeout(() => { btn.textContent = '🔗 参加URLをコピー'; }, 2000); }
 };
 
 /* ============================================================
@@ -899,7 +911,6 @@ window.submitKizyutsuJudge = async () => {
       });
     }
   });
-  alert('判定を送信しました！');
 };
 
 /* ============================================================
