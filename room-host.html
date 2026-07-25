@@ -174,7 +174,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <!-- 待機室 -->
 <div class="screen" id="screen-waiting">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-    <div class="page-title" id="master-trigger" style="cursor:default;user-select:none;margin-bottom:0;">待機室</div>
+    <div class="page-title" id="master-trigger" style="cursor:pointer;user-select:none;margin-bottom:0;" onclick="masterTriggerClick()">待機室</div>
     <div id="master-badge" style="display:none;background:rgba(255,215,0,0.15);border:1.5px solid var(--gold);border-radius:50px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--gold);">👑 マスターモード</div>
   </div>
   <div class="status-bar">
@@ -436,30 +436,28 @@ window.backToWaiting = () => {
 };
 
 /* ============================================================
-   マスターモード（待機室タイトルを3秒長押しで切り替え）
+   マスターモード（待機室タイトルをクリックで切り替え）
 ============================================================ */
 let _masterMode     = localStorage.getItem('gundan_master') === '1';
-let _longPressTimer = null;
-
-// scriptが実行されてDOM確定後にリスナーを登録
-setTimeout(() => {
-  const titleEl = document.getElementById('master-trigger');
-  if (!titleEl) return;
-  titleEl.addEventListener('pointerdown', () => {
-    _longPressTimer = setTimeout(() => {
-      _masterMode = !_masterMode;
-      localStorage.setItem('gundan_master', _masterMode ? '1' : '0');
-      updateMasterModeUI();
-    }, 3000);
-  });
-  titleEl.addEventListener('pointerup',    () => clearTimeout(_longPressTimer));
-  titleEl.addEventListener('pointerleave', () => clearTimeout(_longPressTimer));
-  titleEl.addEventListener('touchend',     () => clearTimeout(_longPressTimer));
-}, 500);
+let _clickCount     = 0;
+let _clickTimer     = null;
 
 function initMasterMode() {
   updateMasterModeUI();
 }
+
+// 待機室タイトルを5回連続クリックで切り替え
+window.masterTriggerClick = () => {
+  _clickCount++;
+  clearTimeout(_clickTimer);
+  _clickTimer = setTimeout(() => { _clickCount = 0; }, 2000);
+  if (_clickCount >= 5) {
+    _clickCount = 0;
+    _masterMode = !_masterMode;
+    localStorage.setItem('gundan_master', _masterMode ? '1' : '0');
+    updateMasterModeUI();
+  }
+};
 
 function updateMasterModeUI() {
   // バッジ表示
@@ -959,22 +957,24 @@ window.revealOneKizyutsu = async (pid) => {
 
   // 公開済み一覧に追加（判定ボタン付き）
   const revealedEl = document.getElementById('kizyutsu-revealed-answers');
-  revealedEl.innerHTML += `
-    <div class="kizyutsu-answer-item" id="kitem-${pid}">
-      <div class="kizyutsu-answer-name">${data.name}</div>
-      <div class="kizyutsu-answer-text">${data.text}</div>
-      <div class="kizyutsu-judge-btns">
-        <button class="judge-btn correct" onclick="setKizyutsuJudge('${pid}', true)" id="kjc-${pid}">○</button>
-        <button class="judge-btn wrong"   onclick="setKizyutsuJudge('${pid}', false)" id="kjw-${pid}">×</button>
-      </div>
-    </div>`;
-  document.getElementById('kizyutsu-revealed-card').style.display = 'block';
+  if (revealedEl) {
+    revealedEl.innerHTML += `
+      <div class="kizyutsu-answer-item" id="kitem-${pid}">
+        <div class="kizyutsu-answer-name">${data.name}</div>
+        <div class="kizyutsu-answer-text">${data.text}</div>
+        <div class="kizyutsu-judge-btns">
+          <button class="judge-btn correct" onclick="setKizyutsuJudge('${pid}', true)" id="kjc-${pid}">○</button>
+          <button class="judge-btn wrong"   onclick="setKizyutsuJudge('${pid}', false)" id="kjw-${pid}">×</button>
+        </div>
+      </div>`;
+    document.getElementById('kizyutsu-revealed-card').style.display = 'block';
+  }
 };
 
 window.revealAllKizyutsu = async () => {
   const unrevealed = (window._kizyutsuRevealData || []).filter(d => !d.revealed);
   for (const d of unrevealed) {
-    await revealOneKizyutsu(d.id);
+    await window.revealOneKizyutsu(d.id);
   }
 };
 
