@@ -677,21 +677,11 @@ window.transferHostTo = async (pid, pname) => {
 })();
 
 window.createRoom = async () => {
-  // 入力値があればそれを使う、なければランダム生成
   const inputId = document.getElementById('input-room-id-host').value.trim().toUpperCase();
   roomId = inputId || Math.random().toString(36).substring(2, 8).toUpperCase();
 
-  // 既に同じIDのルームが存在するか確認
-  if (inputId) {
-    const existing = await get(ref(db, `rooms/${roomId}`));
-    if (existing.exists()) {
-      alert(`ルームID「${roomId}」は既に使われています。別のIDを入力してください。`);
-      return;
-    }
-  }
-
-  const roomRef = ref(db, `rooms/${roomId}`);
-  await set(roomRef, {
+  // 古いデータを削除して新規作成
+  await set(ref(db, `rooms/${roomId}`), {
     status: 'waiting',
     createdAt: Date.now(),
     currentQuestion: null
