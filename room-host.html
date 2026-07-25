@@ -679,6 +679,7 @@ window.transferHostTo = async (pid, pname) => {
   document.getElementById('room-url-display').textContent = url;
   document.getElementById('quiz-room-id').textContent = `ROOM: ${roomId}`;
   _players = loadPlayers();
+  savePlayers();
   renderPointBoard();
   listenPlayers();
   showScreen('screen-waiting');
@@ -708,6 +709,7 @@ window.createRoom = async () => {
   document.getElementById('quiz-room-id').textContent = `ROOM: ${roomId}`;
 
   _players = loadPlayers();
+  savePlayers();
   renderPointBoard();
   listenPlayers();
   showScreen('screen-waiting');
@@ -1232,6 +1234,10 @@ function loadPlayers() {
 }
 function savePlayers() {
   try { localStorage.setItem(PB_KEY(), JSON.stringify(_players)); } catch(e) {}
+  // ゲスト側に見せるためFirebaseにも同期
+  if (roomId) {
+    set(ref(db, `rooms/${roomId}/pointBoard`), _players).catch(()=>{});
+  }
 }
 function addPointByName(name) {
   const idx = _players.findIndex(p => p.name === name);
