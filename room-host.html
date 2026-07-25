@@ -228,10 +228,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <button class="back-btn" onclick="showScreen('screen-question-mode')">← もどる</button>
   <div class="page-title">問題を作って出題</div>
   <div class="card">
+    <div class="card-title">問題タイプ</div>
+    <div style="display:flex;gap:10px;">
+      <button id="adhoc-type-kizyutsu" class="btn btn-primary btn-sm" style="flex:1;" onclick="setAdhocType('kizyutsu')">📝 記述式</button>
+      <button id="adhoc-type-jiyuu" class="btn btn-gold btn-sm" style="flex:1;opacity:0.5;" onclick="setAdhocType('jiyuu')">💬 自由回答</button>
+    </div>
+    <div id="adhoc-type-desc" style="font-size:11px;color:var(--text-muted);margin-top:8px;">正解あり・ホストが正誤判定する</div>
+  </div>
+  <div class="card">
     <div class="card-title">問題文</div>
     <textarea class="adhoc-textarea" id="adhoc-text" placeholder="問題文を入力してください..."></textarea>
   </div>
-  <div class="card">
+  <div class="card" id="adhoc-answer-card">
     <div class="card-title">正解（ホストのみ表示）</div>
     <input class="adhoc-input" id="adhoc-answer" placeholder="正解を入力してください" />
   </div>
@@ -309,15 +317,25 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="card-title">回答状況</div>
       <div class="answer-status" id="kizyutsu-answer-status"></div>
     </div>
-    <div id="kizyutsu-answers-area" style="display:none;">
+    <!-- 締め切りボタン -->
+    <div class="btn-row" id="kizyutsu-close-row">
+      <button class="btn btn-primary" onclick="closeKizyutsu()">締め切る</button>
+    </div>
+    <!-- 締め切り後：公開操作エリア -->
+    <div id="kizyutsu-reveal-area" style="display:none;">
       <div class="card">
-        <div class="card-title">全員の回答 - 正誤を判定してください</div>
-        <div class="kizyutsu-answers" id="kizyutsu-answers"></div>
+        <div class="card-title">回答を公開する</div>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button class="btn btn-primary" onclick="revealAllKizyutsu()">🎉 残り全員を一斉公開</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">または一人ずつ公開</div>
+        <div id="kizyutsu-reveal-buttons"></div>
+      </div>
+      <div class="card" style="margin-top:12px;" id="kizyutsu-revealed-card" style="display:none;">
+        <div class="card-title">公開済みの回答 - 正誤を判定してください</div>
+        <div class="kizyutsu-answers" id="kizyutsu-revealed-answers"></div>
         <button class="btn btn-green" onclick="submitKizyutsuJudge()" style="margin-top:8px;">✅ 判定を確定する</button>
       </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="closeKizyutsu()" id="btn-close-kizyutsu">締め切って回答を表示</button>
     </div>
   </div>
 
@@ -423,8 +441,8 @@ window.backToWaiting = () => {
 let _masterMode     = localStorage.getItem('gundan_master') === '1';
 let _longPressTimer = null;
 
-// イベントリスナーはページ読み込み時に1回だけ登録
-document.addEventListener('DOMContentLoaded', () => {
+// scriptが実行されてDOM確定後にリスナーを登録
+setTimeout(() => {
   const titleEl = document.getElementById('master-trigger');
   if (!titleEl) return;
   titleEl.addEventListener('pointerdown', () => {
@@ -437,10 +455,9 @@ document.addEventListener('DOMContentLoaded', () => {
   titleEl.addEventListener('pointerup',    () => clearTimeout(_longPressTimer));
   titleEl.addEventListener('pointerleave', () => clearTimeout(_longPressTimer));
   titleEl.addEventListener('touchend',     () => clearTimeout(_longPressTimer));
-});
+}, 500);
 
 function initMasterMode() {
-  // UIの更新のみ（イベントリスナーは登録済み）
   updateMasterModeUI();
 }
 
@@ -473,23 +490,44 @@ window.showQuestionModeSelect = () => {
   showScreen('screen-question-mode');
 };
 
+let _adhocType = 'kizyutsu'; // デフォルトは記述式
+
+window.setAdhocType = (type) => {
+  _adhocType = type;
+  const kBtn = document.getElementById('adhoc-type-kizyutsu');
+  const jBtn = document.getElementById('adhoc-type-jiyuu');
+  const desc = document.getElementById('adhoc-type-desc');
+  const answerCard = document.getElementById('adhoc-answer-card');
+  if (type === 'kizyutsu') {
+    kBtn.style.opacity = '1'; jBtn.style.opacity = '0.5';
+    desc.textContent = '正解あり・ホストが正誤判定する';
+    answerCard.style.display = 'block';
+  } else {
+    kBtn.style.opacity = '0.5'; jBtn.style.opacity = '1';
+    desc.textContent = '正解なし・全員の回答を見せ合う';
+    answerCard.style.display = 'none';
+  }
+};
+
 window.showAdHocQuestion = () => {
+  _adhocType = 'kizyutsu';
   document.getElementById('adhoc-text').value   = '';
   document.getElementById('adhoc-answer').value = '';
+  setAdhocType('kizyutsu');
   showScreen('screen-adhoc');
 };
 
 window.startAdHocQuestion = async () => {
   const text   = document.getElementById('adhoc-text').value.trim();
   const answer = document.getElementById('adhoc-answer').value.trim();
-  if (!text)   { alert('問題文を入力してください'); return; }
-  if (!answer) { alert('正解を入力してください'); return; }
+  if (!text) { alert('問題文を入力してください'); return; }
+  if (_adhocType === 'kizyutsu' && !answer) { alert('正解を入力してください'); return; }
 
-  currentQuestion = { type: 'kizyutsu', text, answer, genreName: 'その場で作成', qIndex: -1 };
+  currentQuestion = { type: _adhocType, text, answer: answer || '', genreName: 'その場で作成', qIndex: -1 };
 
   const qData = {
     genreName: 'その場で作成',
-    type:      'kizyutsu',
+    type:      _adhocType,
     text,
     status:    'active',
     startedAt:  Date.now()
@@ -735,8 +773,8 @@ function renderQuizHost() {
 
   // 記述初期化
   if (type === 'kizyutsu') {
-    document.getElementById('kizyutsu-answers-area').style.display = 'none';
-    document.getElementById('btn-close-kizyutsu').disabled = false;
+    document.getElementById('kizyutsu-reveal-area').style.display  = 'none';
+    document.getElementById('kizyutsu-close-row').style.display    = 'flex';
   }
 
   // 自由回答初期化
@@ -874,34 +912,78 @@ function updateKizyutsuStatus(answers) {
 }
 
 window.closeKizyutsu = async () => {
-  document.getElementById('btn-close-kizyutsu').disabled = true;
+  document.getElementById('kizyutsu-close-row').style.display = 'none';
   await update(ref(db, `rooms/${roomId}/currentQuestion`), { status: 'closed' });
 
   const aSnap = await get(ref(db, `rooms/${roomId}/answers`));
   const pSnap = await get(ref(db, `rooms/${roomId}/players`));
   const answers = aSnap.val() || {};
   const players = pSnap.val() || {};
-
   kizyutsuJudges = {};
-  document.getElementById('kizyutsu-answers').innerHTML = Object.entries(players).map(([id, p]) => {
-    const ans = answers[id];
-    const text = ans ? ans.text : '（未回答）';
-    return `<div class="kizyutsu-answer-item" id="kitem-${id}">
-      <div class="kizyutsu-answer-name">${p.name}</div>
-      <div class="kizyutsu-answer-text">${text}</div>
+
+  // 全員の回答データを保持（ホストにも伏せ字）
+  window._kizyutsuRevealData = Object.entries(players).map(([id, p]) => ({
+    id,
+    name: p.name,
+    text: answers[id] ? answers[id].text : '（未回答）',
+    revealed: false
+  }));
+
+  // 一人ずつ公開ボタンを生成
+  document.getElementById('kizyutsu-reveal-buttons').innerHTML =
+    window._kizyutsuRevealData.map(d => `
+      <button class="btn btn-gold" style="margin-bottom:8px;padding:10px;" id="kobtn-${d.id}" onclick="revealOneKizyutsu('${d.id}')">
+        👤 ${d.name} の回答を見る
+      </button>
+    `).join('');
+
+  document.getElementById('kizyutsu-reveal-area').style.display     = 'block';
+  document.getElementById('kizyutsu-revealed-card').style.display   = 'none';
+  document.getElementById('kizyutsu-revealed-answers').innerHTML    = '';
+};
+
+window.revealOneKizyutsu = async (pid) => {
+  const data = (window._kizyutsuRevealData || []).find(d => d.id === pid);
+  if (!data || data.revealed) return;
+  data.revealed = true;
+
+  // Firebaseに公開済みを通知
+  const revealed = (window._kizyutsuRevealData || [])
+    .filter(d => d.revealed)
+    .reduce((acc, d) => { acc[d.id] = d.text; return acc; }, {});
+  await update(ref(db, `rooms/${roomId}/currentQuestion`), { kizyutsuRevealed: revealed });
+
+  // ボタンを無効化
+  const btn = document.getElementById(`kobtn-${pid}`);
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+
+  // 公開済み一覧に追加（判定ボタン付き）
+  const revealedEl = document.getElementById('kizyutsu-revealed-answers');
+  revealedEl.innerHTML += `
+    <div class="kizyutsu-answer-item" id="kitem-${pid}">
+      <div class="kizyutsu-answer-name">${data.name}</div>
+      <div class="kizyutsu-answer-text">${data.text}</div>
       <div class="kizyutsu-judge-btns">
-        <button class="judge-btn correct" onclick="setKizyutsuJudge('${id}', true)" id="kjc-${id}">○</button>
-        <button class="judge-btn wrong"   onclick="setKizyutsuJudge('${id}', false)" id="kjw-${id}">×</button>
+        <button class="judge-btn correct" onclick="setKizyutsuJudge('${pid}', true)" id="kjc-${pid}">○</button>
+        <button class="judge-btn wrong"   onclick="setKizyutsuJudge('${pid}', false)" id="kjw-${pid}">×</button>
       </div>
     </div>`;
-  }).join('');
-  document.getElementById('kizyutsu-answers-area').style.display = 'block';
+  document.getElementById('kizyutsu-revealed-card').style.display = 'block';
+};
+
+window.revealAllKizyutsu = async () => {
+  const unrevealed = (window._kizyutsuRevealData || []).filter(d => !d.revealed);
+  for (const d of unrevealed) {
+    await revealOneKizyutsu(d.id);
+  }
 };
 
 window.setKizyutsuJudge = (playerId, isCorrect) => {
   kizyutsuJudges[playerId] = isCorrect;
-  document.getElementById(`kjc-${playerId}`).classList.toggle('selected',  isCorrect);
-  document.getElementById(`kjw-${playerId}`).classList.toggle('selected', !isCorrect);
+  const cBtn = document.getElementById(`kjc-${playerId}`);
+  const wBtn = document.getElementById(`kjw-${playerId}`);
+  if (cBtn) cBtn.classList.toggle('selected',  isCorrect);
+  if (wBtn) wBtn.classList.toggle('selected', !isCorrect);
 };
 
 window.submitKizyutsuJudge = async () => {

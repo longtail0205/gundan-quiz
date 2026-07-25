@@ -553,29 +553,40 @@ async function handleClosed(q) {
     document.getElementById('play-results-area').style.display = 'block';
 
   } else if (type === 'kizyutsu') {
-    // 記述：全員の回答を表示（判定待ち）
-    const aSnap   = await get(ref(db, `rooms/${roomId}/answers`));
+    // 記述：締め切り → 名前のみ表示・回答は伏せ字
     const pSnap   = await get(ref(db, `rooms/${roomId}/players`));
-    const answers = aSnap.val() || {};
     const players = pSnap.val() || {};
 
-    const answersHtml = Object.entries(players).map(([id, p]) => {
-      const ans = answers[id];
-      return `<div class="answer-item" id="pans-${id}">
+    const answersHtml = Object.entries(players).map(([id, p]) => `
+      <div class="answer-item" id="pans-${id}">
         <div class="answer-item-name">${p.name}</div>
-        <div class="answer-item-text">${ans ? ans.text : '（未回答）'}</div>
+        <div class="answer-item-text" id="ptext-${id}" style="color:var(--text-muted);letter-spacing:0.2em;">？？？</div>
         <div class="answer-item-judge" id="pjudge-${id}">⏳</div>
-      </div>`;
-    }).join('');
+      </div>`).join('');
 
     document.getElementById('play-results-area').innerHTML = `
       <div class="card" style="margin-top:8px;">
-        <div style="font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:10px;">全員の回答 - ホストの判定待ち</div>
+        <div style="font-size:12px;color:var(--gold2);font-weight:700;margin-bottom:10px;">全員の回答 - ホストの公開待ち</div>
         <div class="all-answers">${answersHtml}</div>
       </div>`;
-    document.getElementById('play-results-area').style.display   = 'block';
-    document.getElementById('kizyutsu-input-area').style.display  = 'none';
-    document.getElementById('kizyutsu-sent-msg').style.display    = 'none';
+    document.getElementById('play-results-area').style.display  = 'block';
+    document.getElementById('kizyutsu-input-area').style.display = 'none';
+    document.getElementById('kizyutsu-sent-msg').style.display   = 'none';
+
+    // kizyutsuRevealedの変化を監視して一人ずつ表示
+    onValue(ref(db, `rooms/${roomId}/currentQuestion/kizyutsuRevealed`), snap => {
+      const revealed = snap.val() || {};
+      Object.entries(revealed).forEach(([id, text]) => {
+        const textEl = document.getElementById(`ptext-${id}`);
+        if (textEl && textEl.textContent === '？？？') {
+          textEl.textContent = text;
+          textEl.style.color = '#fff';
+          textEl.style.letterSpacing = '';
+          const el = document.getElementById(`pans-${id}`);
+          if (el) { el.style.borderColor = 'rgba(100,180,255,0.3)'; el.style.background = 'rgba(100,180,255,0.05)'; }
+        }
+      });
+    });
   }
 }
 
