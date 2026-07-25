@@ -234,7 +234,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </div><!-- /wrap -->
 
 <!-- questions.jsを先に読み込む（NAGAOクイズで使用） -->
-<script src="questions.js"></script>
+<script>document.write('<script src="questions.js?v=' + Date.now() + '"><\/script>');</script>
 
 <!-- NAGAOクイズ（通常script・DEFAULT_GENRESに直接アクセス） -->
 <script>
