@@ -167,6 +167,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
   <div class="card">
     <div class="card-title">ルームを作成する</div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;color:var(--text-muted);font-weight:700;display:block;margin-bottom:6px;letter-spacing:0.05em;">ルームID（空欄の場合はランダム生成）</label>
+      <input class="adhoc-input" id="input-room-id-host" placeholder="例：GUNDAN（半角英数6文字まで）" maxlength="6" style="text-transform:uppercase;" />
+    </div>
     <button class="btn btn-primary" onclick="createRoom()">🎮 ルームを作成</button>
   </div>
 </div>
@@ -673,8 +677,19 @@ window.transferHostTo = async (pid, pname) => {
 })();
 
 window.createRoom = async () => {
-  // 6桁のランダムなルームID
-  roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+  // 入力値があればそれを使う、なければランダム生成
+  const inputId = document.getElementById('input-room-id-host').value.trim().toUpperCase();
+  roomId = inputId || Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  // 既に同じIDのルームが存在するか確認
+  if (inputId) {
+    const existing = await get(ref(db, `rooms/${roomId}`));
+    if (existing.exists()) {
+      alert(`ルームID「${roomId}」は既に使われています。別のIDを入力してください。`);
+      return;
+    }
+  }
+
   const roomRef = ref(db, `rooms/${roomId}`);
   await set(roomRef, {
     status: 'waiting',
