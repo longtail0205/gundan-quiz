@@ -371,7 +371,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <button class="btn btn-gold" onclick="backToWaiting()">🏠 待機室へ</button>
     </div>
   </div>
-</div>
 
 </div>
 
@@ -482,8 +481,8 @@ function updateMasterModeUI() {
 }
 
 window.showQuestionModeSelect = () => {
-  updateMasterModeUI();
   showScreen('screen-question-mode');
+  updateMasterModeUI();
 };
 
 let _adhocType = 'kizyutsu'; // デフォルトは記述式
@@ -555,7 +554,9 @@ window.showHostTransfer = () => {
 
 window.transferHostTo = async (pid, pname) => {
   await update(ref(db, `rooms/${roomId}`), { hostPlayerId: pid });
-  backToWaiting();
+  // 元ホストは参加者として参加画面に移動
+  const playUrl = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}`;
+  location.href = playUrl;
 };
 
 /* ============================================================
@@ -1216,11 +1217,22 @@ function masterTriggerClick() {
     }
   }
 }
-// ページ読み込み時にバッジ状態を反映
+// ページ読み込み時にバッジ状態と既存問題ボタンを反映
 (function() {
   const isMaster = localStorage.getItem('gundan_master') === '1';
   const badge = document.getElementById('master-badge');
   if (badge) badge.style.display = isMaster ? 'block' : 'none';
+  const btn  = document.getElementById('btn-existing-question');
+  const hint = document.getElementById('existing-hint');
+  if (btn) {
+    btn.style.opacity     = isMaster ? '1' : '0.4';
+    btn.style.cursor      = isMaster ? 'pointer' : 'not-allowed';
+    btn.style.borderColor = isMaster ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)';
+    if (!isMaster && btn.onclick) btn.onclick = null;
+    if (hint) hint.textContent = isMaster
+      ? '登録済みの問題を出題する'
+      : '「待機室」を5回クリックでマスターモードを有効にしてください';
+  }
 })();
 </script>
 </body>

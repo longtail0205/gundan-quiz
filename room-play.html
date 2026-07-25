@@ -356,15 +356,18 @@ function listenQuestion() {
         handleClosed(q);
       }
     } else if (q.status === 'jiyuu_closed') {
-      handleJiyuuClosed(q);
+      if (!window._jiyuuClosedHandled) {
+        window._jiyuuClosedHandled = true;
+        handleJiyuuClosed(q);
+      } else if (q.jiyuuRevealed) {
+        handleJiyuuPartialReveal(q);
+      }
     } else if (q.status === 'jiyuu_all_revealed') {
       handleJiyuuAllRevealed(q);
     } else if (q.status === 'judged') {
       handleJudged(q);
     } else if (q.status === 'revealed') {
       handleRevealed(q);
-    } else if (q.jiyuuRevealed) {
-      handleJiyuuPartialReveal(q);
     }
   });
 }
@@ -375,7 +378,8 @@ function listenQuestion() {
 function renderQuestion(q) {
   const type = q.type || 'yontaku';
   const L    = ['A','B','C','D'];
-  window._kizyutsuClosedHandled = false; // 記述式締め切りフラグをリセット
+  window._kizyutsuClosedHandled = false;
+  window._jiyuuClosedHandled    = false;
 
   document.getElementById('play-badge').textContent    = q.genreName || '';
   document.getElementById('play-question').textContent = q.text || '';
