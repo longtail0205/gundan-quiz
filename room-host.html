@@ -162,7 +162,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <!-- セットアップ -->
 <div class="screen active" id="screen-setup">
   <div style="text-align:center;padding:40px 0 32px;">
-    <div class="setup-title">軍団クイズ</div>
+    <div class="setup-title" id="master-trigger" style="cursor:default;user-select:none;">軍団クイズ</div>
     <div class="setup-sub">ホスト画面</div>
   </div>
   <div class="card">
@@ -208,15 +208,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="screen" id="screen-question-mode">
   <button class="back-btn" onclick="backToWaiting()">← もどる</button>
   <div class="page-title">出題方法を選ぶ</div>
-  <div class="card" style="cursor:pointer;" onclick="showQuestionSelect()">
-    <div style="font-size:24px;margin-bottom:8px;">📚</div>
-    <div style="font-family:'Dela Gothic One',sans-serif;font-size:18px;color:var(--gold);margin-bottom:6px;">既存の問題から選ぶ</div>
-    <div style="font-size:13px;color:var(--text-muted);">questions.jsに登録された問題を出題する</div>
-  </div>
-  <div class="card" style="cursor:pointer;margin-top:12px;" onclick="showAdHocQuestion()">
+  <div class="card" style="cursor:pointer;" onclick="showAdHocQuestion()">
     <div style="font-size:24px;margin-bottom:8px;">✏️</div>
     <div style="font-family:'Dela Gothic One',sans-serif;font-size:18px;color:var(--gold);margin-bottom:6px;">その場で問題を作る</div>
     <div style="font-size:13px;color:var(--text-muted);">問題文と正解をその場で入力して出題する（記述式）</div>
+  </div>
+  <div class="card" id="btn-existing-question" style="margin-top:12px;border-radius:var(--radius-lg);padding:20px;opacity:0.4;cursor:not-allowed;">
+    <div style="font-size:24px;margin-bottom:8px;">📚</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:18px;color:#888;margin-bottom:6px;">既存の問題から選ぶ</div>
+    <div style="font-size:13px;color:var(--text-muted);" id="existing-hint">タイトルを長押しでマスターモードを有効にしてください</div>
   </div>
 </div>
 
@@ -414,7 +414,52 @@ window.backToWaiting = () => {
   showScreen('screen-waiting');
 };
 
+/* ============================================================
+   マスターモード（タイトルを3秒長押しで切り替え）
+============================================================ */
+let _masterMode     = localStorage.getItem('gundan_master') === '1';
+let _longPressTimer = null;
+
+function initMasterMode() {
+  const titleEl = document.getElementById('master-trigger');
+  if (!titleEl) return;
+  titleEl.addEventListener('pointerdown', () => {
+    _longPressTimer = setTimeout(() => {
+      _masterMode = !_masterMode;
+      localStorage.setItem('gundan_master', _masterMode ? '1' : '0');
+      updateMasterModeUI();
+      alert(_masterMode ? '🔓 マスターモード ON\n既存問題が選べるようになりました' : '🔒 マスターモード OFF');
+    }, 3000);
+  });
+  titleEl.addEventListener('pointerup',    () => clearTimeout(_longPressTimer));
+  titleEl.addEventListener('pointerleave', () => clearTimeout(_longPressTimer));
+  updateMasterModeUI();
+}
+
+function updateMasterModeUI() {
+  const btn = document.getElementById('btn-existing-question');
+  const hint = document.getElementById('existing-hint');
+  if (!btn) return;
+  if (_masterMode) {
+    btn.style.opacity    = '1';
+    btn.style.cursor     = 'pointer';
+    btn.style.borderColor = 'rgba(255,215,0,0.5)';
+    btn.onclick          = () => showQuestionSelect();
+    if (hint) hint.textContent = '登録済みの問題を出題する';
+    // タイトルも光らせる
+    const titleEl = document.getElementById('master-trigger');
+    if (titleEl) titleEl.style.textShadow = '0 0 20px rgba(255,215,0,1),0 0 40px rgba(255,170,0,0.8),3px 3px 0 #7a4400';
+  } else {
+    btn.style.opacity    = '0.4';
+    btn.style.cursor     = 'not-allowed';
+    btn.style.borderColor = 'rgba(255,255,255,0.1)';
+    btn.onclick          = null;
+    if (hint) hint.textContent = 'タイトルを長押しでマスターモードを有効にしてください';
+  }
+}
+
 window.showQuestionModeSelect = () => {
+  updateMasterModeUI();
   showScreen('screen-question-mode');
 };
 
@@ -489,6 +534,7 @@ window.transferHostTo = async (playerId, playerName) => {
   renderPointBoard();
   listenPlayers();
   showScreen('screen-waiting');
+  initMasterMode();
 })();
 
 window.createRoom = async () => {
@@ -510,11 +556,12 @@ window.createRoom = async () => {
   renderPointBoard();
   listenPlayers();
   showScreen('screen-waiting');
+  initMasterMode();
 };
 
 window.copyRoomUrl = () => {
   const url = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}`;
-  navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！\nLINEで参加者に送ってください。'));
+  navigator.clipboard.writeText(url).then(() => alert('参加URLをコピーしました！\nLINEで参加者に送ってください。\n\n' + url));
 };
 
 /* ============================================================

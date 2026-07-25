@@ -436,6 +436,7 @@ label.btn-export input[type="file"]:disabled {
     <button class="btn-primary" onclick="showManageGenreForm(null)">＋ 新しいジャンルを追加</button>
     <div class="mgmt-genre-list" id="mgmt-genre-list"></div>
     <button class="btn-export" onclick="exportJS()">📥 questions.js として出力</button>
+    <button class="btn-reset" style="display:block;width:100%;margin-top:10px;padding:12px;border-radius:50px;font-size:13px;" onclick="resetLocalStorage()">🔄 localStorageをリセット（questions.jsを再読み込み）</button>
   </div>
 </div>
 
@@ -667,6 +668,16 @@ function loadGenres() {
 }
 function saveGenres() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(GENRES)); } catch(e) {}
+}
+
+function resetLocalStorage() {
+  if (!confirm('localStorageのデータを削除してquestions.jsを再読み込みしますか？\n※問題管理で追加・編集した内容は失われます')) return;
+  localStorage.removeItem(LS_KEY);
+  const fresh = loadGenres();
+  GENRES.length = 0;
+  fresh.forEach(g => GENRES.push(g));
+  showManage();
+  alert('リセットしました。questions.jsのデータが読み込まれました。');
 }
 let GENRES = loadGenres();
 
