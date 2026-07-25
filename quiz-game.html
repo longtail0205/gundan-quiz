@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>軍団常識クイズ</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#ffd700;--gold2:#ffaa00;--gold3:#cc8800;--bg-dark:#0a0412;--bg-card:#1a0e2e;--bg-card2:#221540;--neon-cyan:#00ffee;--neon-pink:#ff44cc;--correct:#00ffaa;--wrong:#ff3355;--text-muted:#aaa8cc;--radius:14px;--radius-lg:20px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg-dark);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px 16px 48px;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,#3a0060 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 100%,#001a44 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 10% 80%,#440010 0%,transparent 60%);pointer-events:none;z-index:0;}
+.coins-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.coin{position:absolute;top:-40px;animation:coinFall linear infinite;opacity:0.2;}
+@keyframes coinFall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+.screen{display:none;width:100%;max-width:700px;position:relative;z-index:1;animation:screenIn 0.35s cubic-bezier(0.22,1,0.36,1);}
+.screen.active{display:block;}
+@keyframes screenIn{from{opacity:0;transform:translateY(20px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+/* TITLE */
+.title-screen{text-align:center;padding:48px 24px 40px;}
+.slot-display{display:flex;justify-content:center;gap:10px;margin-bottom:28px;}
+.slot-reel{width:76px;height:84px;background:linear-gradient(180deg,#2a1050,#1a0830);border:3px solid var(--gold2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 0 20px rgba(255,170,0,0.45),inset 0 2px 8px rgba(0,0,0,0.6);animation:reelPulse 2s ease-in-out infinite;position:relative;overflow:hidden;}
+.slot-reel::after{content:'';position:absolute;top:0;left:0;right:0;height:35%;background:linear-gradient(180deg,rgba(255,255,255,0.1),transparent);border-radius:9px 9px 0 0;}
+@keyframes reelPulse{0%,100%{box-shadow:0 0 20px rgba(255,170,0,0.45),inset 0 2px 8px rgba(0,0,0,0.6);}50%{box-shadow:0 0 36px rgba(255,215,0,0.8),inset 0 2px 8px rgba(0,0,0,0.6);}}
+.title-label{font-size:11px;font-weight:700;letter-spacing:0.28em;color:var(--gold2);margin-bottom:6px;text-transform:uppercase;}
+.title-main{font-family:'Dela Gothic One',sans-serif;font-size:clamp(28px,7vw,48px);color:var(--gold);letter-spacing:0.06em;line-height:1.15;text-shadow:0 0 20px rgba(255,215,0,0.8),0 0 40px rgba(255,170,0,0.4),3px 3px 0 #7a4400,6px 6px 0 #3d2200;margin-bottom:8px;}
+.title-sub{font-size:13px;color:var(--text-muted);font-weight:400;letter-spacing:0.1em;margin-bottom:38px;}
+.btn-start{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#ff2244,#cc0033,#990022);color:#fff;font-family:'Dela Gothic One',sans-serif;font-size:22px;letter-spacing:0.1em;padding:18px 56px;border-radius:50px;border:3px solid rgba(255,255,255,0.25);cursor:pointer;box-shadow:0 6px 0 #660011,0 0 32px rgba(255,34,68,0.5);transition:all 0.15s;position:relative;overflow:hidden;}
+.btn-start::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:shimmer 2.5s ease-in-out infinite;pointer-events:none;}
+@keyframes shimmer{to{left:150%;}}
+.btn-start:hover{transform:translateY(-3px);box-shadow:0 9px 0 #660011,0 0 44px rgba(255,34,68,0.7);}
+.btn-start:active{transform:translateY(4px);box-shadow:0 2px 0 #660011;}
+.title-deco-line{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:30px;color:var(--gold2);font-size:13px;letter-spacing:0.2em;opacity:0.6;}
+.title-deco-line::before,.title-deco-line::after{content:'';flex:1;max-width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--gold2));}
+.title-deco-line::after{transform:scaleX(-1);}
+
+/* COMMON */
+.page-wrap{padding:8px 0 0;}
+.page-top{display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+.btn-back{background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,215,0,0.3);border-radius:50px;padding:8px 18px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--gold2);transition:all 0.15s;white-space:nowrap;}
+.btn-back:hover{background:rgba(255,215,0,0.1);border-color:var(--gold2);}
+.page-title{font-family:'Dela Gothic One',sans-serif;font-size:20px;color:var(--gold);letter-spacing:0.05em;text-shadow:0 0 12px rgba(255,215,0,0.4);flex:1;}
+.page-badge{background:rgba(255,170,0,0.12);border:1px solid var(--gold3);color:var(--gold2);font-size:11px;font-weight:700;padding:4px 12px;border-radius:50px;white-space:nowrap;}
+
+/* GENRE */
+.genre-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+.genre-card{background:var(--bg-card);border:2px solid rgba(255,215,0,0.15);border-radius:var(--radius-lg);padding:24px 18px 20px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;}
+.genre-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--genre-color,var(--gold));opacity:0.5;transition:opacity 0.2s;}
+.genre-card:hover{border-color:var(--genre-color,var(--gold));transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+.genre-card:hover::after{opacity:1;}
+.genre-logo-wrap{width:90px;height:60px;background:rgba(255,255,255,0.06);border-radius:10px;display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,0.1);overflow:hidden;flex-shrink:0;}
+.genre-logo-wrap img{max-width:82px;max-height:52px;object-fit:contain;}
+.genre-logo-text{font-family:'Dela Gothic One',sans-serif;font-size:15px;letter-spacing:0.04em;text-shadow:0 0 8px currentColor;line-height:1.1;text-align:center;padding:4px;}
+.genre-name{font-family:'Dela Gothic One',sans-serif;font-size:16px;color:#fff;letter-spacing:0.05em;}
+.genre-desc{font-size:11px;color:var(--text-muted);line-height:1.4;}
+.genre-count{background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);color:var(--gold2);font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;}
+
+/* QUESTION LIST */
+.question-list{display:flex;flex-direction:column;gap:8px;}
+.q-item{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.12);border-radius:var(--radius);padding:14px 18px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.15s;}
+.q-item:hover{border-color:rgba(255,215,0,0.5);background:var(--bg-card2);transform:translateX(4px);}
+.q-num{background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#1a0800;font-weight:900;font-size:12px;min-width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 8px rgba(255,170,0,0.4);}
+.q-text{flex:1;font-size:14px;color:#ddd;font-weight:700;line-height:1.4;}
+.q-type-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;white-space:nowrap;flex-shrink:0;}
+.q-type-badge.hayaoshi{background:rgba(255,68,204,0.15);border:1px solid rgba(255,68,204,0.4);color:#ff88dd;}
+.q-type-badge.yontaku{background:rgba(0,255,170,0.1);border:1px solid rgba(0,255,170,0.3);color:#00ddaa;}
+.q-status{font-size:16px;flex-shrink:0;}
+.q-arrow{color:var(--gold3);font-size:18px;flex-shrink:0;}
+
+/* QUIZ */
+.quiz-topbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.quiz-progress-wrap{flex:1;}
+.quiz-progress-label{font-size:11px;color:var(--gold2);font-weight:700;margin-bottom:5px;letter-spacing:0.05em;}
+.progress-bar{background:rgba(255,255,255,0.08);height:7px;border-radius:50px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold));border-radius:50px;transition:width 0.5s ease;box-shadow:0 0 8px rgba(255,215,0,0.5);}
+.btn-icon{background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,215,0,0.25);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;transition:all 0.15s;color:var(--gold2);}
+.btn-icon:hover{background:rgba(255,215,0,0.1);border-color:var(--gold2);}
+.btn-icon.no-audio{opacity:0.3;cursor:default;pointer-events:none;}
+.quiz-card{background:var(--bg-card);border:2px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:24px 22px;margin-bottom:16px;position:relative;overflow:hidden;min-height:120px;}
+.quiz-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon-pink),var(--gold),var(--neon-cyan));}
+.quiz-badge-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.quiz-genre-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.4);color:var(--gold2);letter-spacing:0.05em;}
+.quiz-q-num{font-size:11px;color:var(--text-muted);font-weight:700;letter-spacing:0.05em;margin-left:auto;}
+.quiz-media{margin:12px 0;}
+.quiz-media img{width:100%;max-height:420px;object-fit:contain;border-radius:10px;display:block;background:rgba(0,0,0,0.2);}
+.quiz-media video{width:100%;max-height:220px;display:block;border-radius:10px;}
+.quiz-question{font-family:'Noto Sans JP',sans-serif;font-size:clamp(17px,3.5vw,21px);font-weight:900;color:#fff;line-height:1.6;}
+.choices-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.choice-btn{background:var(--bg-card);border:2px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 12px;cursor:pointer;text-align:left;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;color:#ddd;line-height:1.4;transition:all 0.15s;display:flex;align-items:flex-start;gap:9px;position:relative;overflow:hidden;}
+.choice-btn:hover:not(:disabled){border-color:var(--gold2);background:var(--bg-card2);color:#fff;transform:translateY(-2px);}
+.choice-btn:active:not(:disabled){transform:translateY(1px);}
+.choice-label{background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.4);color:var(--gold2);font-size:11px;font-weight:900;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.choice-btn.correct{background:rgba(0,255,170,0.08);border-color:var(--correct);color:var(--correct);box-shadow:0 0 16px rgba(0,255,170,0.2);}
+.choice-btn.correct .choice-label{background:var(--correct);border-color:var(--correct);color:#003322;}
+.choice-btn.correct-only{background:rgba(0,255,170,0.08);border-color:var(--correct);color:var(--correct);box-shadow:0 0 16px rgba(0,255,170,0.2);}
+.choice-btn.correct-only .choice-label{background:var(--correct);border-color:var(--correct);color:#003322;}
+.choice-btn.wrong{background:rgba(255,51,85,0.08);border-color:var(--wrong);color:var(--wrong);opacity:0.7;}
+.choice-btn.wrong .choice-label{background:var(--wrong);border-color:var(--wrong);color:#fff;}
+.choice-btn.dimmed{opacity:0.3;}
+.choice-btn:disabled{cursor:default;}
+.correct-stamp{position:absolute;top:6px;right:8px;font-size:18px;animation:popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);}
+@keyframes popIn{from{transform:scale(0) rotate(-20deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+
+/* 解説ボックス */
+.explanation-box{background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;display:none;}
+.explanation-box.show{display:block;}
+.explanation-title{font-size:11px;font-weight:700;color:var(--correct);margin-bottom:6px;letter-spacing:0.08em;}
+.explanation-text{font-size:13px;color:#ccc;line-height:1.7;font-weight:400;}
+.explanation-media{margin-top:10px;}
+.explanation-media img{width:100%;max-height:360px;object-fit:contain;border-radius:10px;display:block;background:rgba(0,0,0,0.2);}
+.explanation-media video{width:100%;max-height:220px;display:block;border-radius:10px;}
+.explanation-audio{margin-top:10px;display:flex;align-items:center;gap:10px;}
+.explanation-audio audio{flex:1;height:36px;}
+.explanation-audio-label{font-size:11px;color:var(--text-muted);font-weight:700;white-space:nowrap;}
+
+.quiz-nav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;}
+.btn-nav{background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);border-radius:50px;padding:11px 16px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:#bbb;transition:all 0.15s;display:flex;align-items:center;gap:5px;white-space:nowrap;justify-content:center;}
+.btn-nav:hover:not(:disabled){background:rgba(255,215,0,0.08);border-color:rgba(255,215,0,0.4);color:var(--gold);}
+.btn-nav:active:not(:disabled){transform:scale(0.97);}
+.btn-nav:disabled{opacity:0.25;cursor:default;}
+.btn-nav.btn-list{grid-column:2;background:linear-gradient(135deg,rgba(255,34,68,0.8),rgba(180,0,40,0.9));color:#fff;border-color:rgba(255,100,120,0.4);font-size:12px;padding:11px 14px;box-shadow:0 0 14px rgba(255,34,68,0.3);}
+.btn-nav.btn-list:hover{box-shadow:0 0 22px rgba(255,34,68,0.5);transform:scale(1.03);}
+
+/* BUTTONS */
+.btn-reset{background:rgba(255,100,50,0.12);border:1.5px solid rgba(255,100,50,0.4);border-radius:50px;padding:7px 14px;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:#ff8866;transition:all 0.15s;white-space:nowrap;}
+.btn-reset:hover{background:rgba(255,100,50,0.25);border-color:#ff8866;}
+.btn-random{display:block;width:100%;margin-bottom:14px;background:linear-gradient(135deg,rgba(123,94,255,0.2),rgba(180,50,255,0.15));border:1.5px solid rgba(150,100,255,0.5);border-radius:50px;padding:13px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:#c8aaff;transition:all 0.15s;letter-spacing:0.05em;}
+.btn-random:hover{background:linear-gradient(135deg,rgba(123,94,255,0.35),rgba(180,50,255,0.25));border-color:#aa88ff;color:#fff;box-shadow:0 0 16px rgba(150,100,255,0.3);}
+.btn-show-answer{display:block;width:100%;margin-bottom:12px;background:rgba(255,215,0,0.08);border:1.5px solid rgba(255,215,0,0.3);border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--gold2);transition:all 0.15s;letter-spacing:0.05em;}
+.btn-show-answer:hover{background:rgba(255,215,0,0.15);border-color:var(--gold);color:var(--gold);}
+
+/* CUTIN */
+#cutin-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;}
+#cutin-overlay.active{pointer-events:all;}
+.cutin-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0a0020,#1a0040,#000010);opacity:0;transition:opacity 0.15s;}
+.cutin-lines{position:absolute;inset:0;overflow:hidden;}
+.cutin-line{position:absolute;height:3px;background:linear-gradient(90deg,transparent,var(--neon-pink),var(--gold),var(--neon-cyan),transparent);animation:cutinLine 0.4s ease-out forwards;opacity:0;}
+@keyframes cutinLine{from{width:0;opacity:1;}to{width:100%;opacity:0.6;}}
+.cutin-text-wrap{position:relative;z-index:2;text-align:center;transform:scale(2);opacity:0;transition:transform 0.3s cubic-bezier(0.22,1,0.36,1),opacity 0.3s;}
+.cutin-text-wrap.show{transform:scale(1);opacity:1;}
+.cutin-label{font-family:'Dela Gothic One',sans-serif;font-size:13px;letter-spacing:0.4em;color:var(--neon-pink);text-shadow:0 0 10px var(--neon-pink);margin-bottom:8px;}
+.cutin-title{font-family:'Dela Gothic One',sans-serif;font-size:clamp(28px,8vw,52px);color:var(--gold);letter-spacing:0.08em;text-shadow:0 0 30px rgba(255,215,0,0.9),4px 4px 0 #7a4400;line-height:1.1;}
+
+/* HAYAOSHI */
+.hayaoshi-card{background:var(--bg-card);border:2px solid rgba(255,68,204,0.3);border-radius:var(--radius-lg);padding:28px 24px;margin-bottom:20px;position:relative;overflow:hidden;min-height:200px;cursor:pointer;user-select:none;}
+.hayaoshi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon-pink),var(--gold),var(--neon-cyan));}
+.hayaoshi-badge-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.hayaoshi-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;background:rgba(255,68,204,0.12);border:1px solid rgba(255,68,204,0.4);color:#ff88dd;letter-spacing:0.05em;}
+.hayaoshi-q-num{font-size:11px;color:var(--text-muted);font-weight:700;letter-spacing:0.05em;margin-left:auto;}
+.hayaoshi-media{margin:0 0 16px;}
+.hayaoshi-media img{width:100%;max-height:420px;object-fit:contain;border-radius:10px;display:block;background:rgba(0,0,0,0.2);}
+.hayaoshi-media video{width:100%;max-height:220px;display:block;border-radius:10px;}
+.hayaoshi-question{font-family:'Noto Sans JP',sans-serif;font-size:clamp(20px,4vw,28px);font-weight:900;color:#fff;line-height:1.7;min-height:80px;letter-spacing:0.04em;}
+.hayaoshi-hint{margin-top:12px;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;letter-spacing:0.05em;}
+.hayaoshi-hint.hidden{display:none;}
+.hayaoshi-card.stopped{border-color:rgba(255,215,0,0.5);box-shadow:0 0 20px rgba(255,215,0,0.15);cursor:default;}
+.hayaoshi-answer-area{background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;display:none;}
+.hayaoshi-answer-area.show{display:block;}
+.hayaoshi-answer-label{font-size:11px;font-weight:700;color:var(--correct);margin-bottom:8px;letter-spacing:0.08em;}
+.hayaoshi-answer-text{font-family:'Noto Sans JP',sans-serif;font-size:clamp(18px,4vw,26px);font-weight:900;color:var(--correct);line-height:1.5;text-shadow:0 0 12px rgba(0,255,170,0.4);}
+.hayaoshi-explanation{margin-top:10px;font-size:13px;color:#ccc;line-height:1.7;}
+.hayaoshi-stopped-hint{text-align:center;margin-bottom:12px;font-size:12px;color:var(--gold2);letter-spacing:0.05em;display:none;}
+.hayaoshi-stopped-hint.show{display:block;}
+.btn-reveal{display:block;width:100%;margin-bottom:12px;background:rgba(0,255,170,0.08);border:1.5px solid rgba(0,255,170,0.35);border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--correct);transition:all 0.15s;letter-spacing:0.05em;}
+.btn-reveal:hover{background:rgba(0,255,170,0.15);border-color:var(--correct);}
+
+/* 問題管理 */
+.mgmt-genre-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.mgmt-genre-item{background:var(--bg-card);border:1.5px solid rgba(100,180,255,0.2);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;}
+.mgmt-genre-name{flex:1;font-size:15px;font-weight:700;color:#ddd;}
+.mgmt-genre-count{font-size:12px;color:var(--text-muted);}
+.btn-sm{padding:6px 14px;border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s;border:1.5px solid;white-space:nowrap;}
+.btn-sm.edit{background:rgba(100,180,255,0.1);border-color:rgba(100,180,255,0.4);color:#88ccff;}
+.btn-sm.edit:hover{background:rgba(100,180,255,0.2);}
+.btn-sm.del{background:rgba(255,80,80,0.1);border-color:rgba(255,80,80,0.4);color:#ff8888;}
+.btn-sm.del:hover{background:rgba(255,80,80,0.2);}
+.btn-sm.add{background:rgba(0,255,170,0.1);border-color:rgba(0,255,170,0.3);color:#00ddaa;}
+.btn-sm.add:hover{background:rgba(0,255,170,0.2);}
+.btn-primary{display:block;width:100%;padding:13px;background:linear-gradient(135deg,rgba(100,180,255,0.2),rgba(60,120,255,0.15));border:1.5px solid rgba(100,180,255,0.4);border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:#88ccff;transition:all 0.15s;letter-spacing:0.05em;margin-bottom:12px;}
+.btn-primary:hover{background:linear-gradient(135deg,rgba(100,180,255,0.35),rgba(60,120,255,0.25));color:#fff;box-shadow:0 0 16px rgba(100,180,255,0.3);}
+.btn-export{display:block;width:100%;padding:13px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,170,0,0.1));border:1.5px solid rgba(255,215,0,0.4);border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--gold);transition:all 0.15s;letter-spacing:0.05em;}
+.btn-export:hover{background:linear-gradient(135deg,rgba(255,215,0,0.28),rgba(255,170,0,0.2));box-shadow:0 0 16px rgba(255,215,0,0.25);}
+.mgmt-q-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.mgmt-q-item{background:var(--bg-card);border:1.5px solid rgba(100,180,255,0.15);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;}
+.mgmt-q-num{background:rgba(100,180,255,0.15);color:#88ccff;font-weight:900;font-size:11px;min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mgmt-q-text{flex:1;font-size:13px;color:#ccc;font-weight:700;line-height:1.3;}
+.mgmt-q-actions{display:flex;gap:6px;flex-shrink:0;}
+
+/* フォーム */
+.form-section{background:var(--bg-card);border:1.5px solid rgba(100,180,255,0.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+.form-section-title{font-size:12px;font-weight:700;color:#88ccff;letter-spacing:0.1em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(100,180,255,0.15);}
+.form-row{margin-bottom:14px;}
+.form-label{display:block;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.05em;}
+.form-input,.form-textarea,.form-select{width:100%;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:400;color:#fff;transition:border-color 0.15s;outline:none;}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:rgba(100,180,255,0.6);}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.6;}
+.form-select option{background:#1a0e2e;color:#fff;}
+.form-choices{display:flex;flex-direction:column;gap:8px;}
+.form-choice-row{display:flex;align-items:center;gap:8px;}
+.form-choice-label{font-size:12px;font-weight:700;color:var(--gold2);min-width:20px;}
+.correct-radio{width:18px;height:18px;accent-color:var(--correct);cursor:pointer;flex-shrink:0;}
+.correct-radio-label{font-size:11px;color:var(--text-muted);white-space:nowrap;}
+.form-actions{display:flex;gap:10px;margin-top:4px;}
+.btn-save{flex:1;padding:13px;background:linear-gradient(135deg,rgba(0,255,170,0.2),rgba(0,200,130,0.15));border:1.5px solid rgba(0,255,170,0.4);border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--correct);transition:all 0.15s;}
+.btn-save:hover{background:linear-gradient(135deg,rgba(0,255,170,0.32),rgba(0,200,130,0.25));box-shadow:0 0 16px rgba(0,255,170,0.25);}
+.btn-cancel{padding:13px 20px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.12);border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;color:#888;transition:all 0.15s;}
+.btn-cancel:hover{background:rgba(255,255,255,0.08);color:#bbb;}
+.form-note{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
+.btn-file-pick{padding:9px 12px;background:rgba(255,215,0,0.08);border:1.5px solid rgba(255,215,0,0.3);border-radius:10px;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:var(--gold2);transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.btn-file-pick:hover{background:rgba(255,215,0,0.18);border-color:var(--gold);}
+
+/* ポイントボード */
+#point-toggle{position:fixed;bottom:20px;right:20px;z-index:200;background:linear-gradient(135deg,#1a0e2e,#221540);border:2px solid rgba(255,215,0,0.4);border-radius:50px;padding:10px 18px;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;color:var(--gold);box-shadow:0 4px 20px rgba(0,0,0,0.5),0 0 12px rgba(255,215,0,0.15);transition:all 0.2s;user-select:none;}
+#point-toggle:hover{border-color:var(--gold);box-shadow:0 4px 24px rgba(0,0,0,0.5),0 0 20px rgba(255,215,0,0.3);}
+#point-toggle .pt-icon{font-size:18px;}
+#point-board{position:fixed;bottom:72px;right:20px;z-index:199;width:300px;max-height:70vh;overflow-y:auto;background:linear-gradient(180deg,#120820,#0a0412);border:2px solid rgba(255,215,0,0.3);border-radius:var(--radius-lg);padding:16px;box-shadow:0 8px 40px rgba(0,0,0,0.7),0 0 20px rgba(255,215,0,0.1);display:none;animation:screenIn 0.25s cubic-bezier(0.22,1,0.36,1);}
+#point-board.open{display:block;}
+.pb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,215,0,0.15);}
+.pb-title{font-family:'Dela Gothic One',sans-serif;font-size:15px;color:var(--gold);letter-spacing:0.05em;text-shadow:0 0 8px rgba(255,215,0,0.4);}
+.pb-actions{display:flex;gap:6px;}
+.pb-btn-sm{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:50px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text-muted);transition:all 0.15s;font-family:'Noto Sans JP',sans-serif;}
+.pb-btn-sm:hover{background:rgba(255,255,255,0.12);color:#fff;}
+.pb-btn-sm.danger{border-color:rgba(255,80,80,0.4);color:#ff8888;}
+.pb-btn-sm.danger:hover{background:rgba(255,80,80,0.15);}
+.pb-player-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.pb-player{background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,215,0,0.1);border-radius:var(--radius);padding:10px 12px;display:flex;align-items:center;gap:10px;transition:border-color 0.2s;}
+.pb-player.top{border-color:rgba(255,215,0,0.4);background:rgba(255,215,0,0.05);}
+.pb-rank{font-size:16px;min-width:24px;text-align:center;flex-shrink:0;}
+.pb-name{flex:1;font-size:13px;font-weight:700;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pb-score{font-family:'Dela Gothic One',sans-serif;font-size:20px;color:var(--gold);text-shadow:0 0 8px rgba(255,215,0,0.4);min-width:36px;text-align:right;flex-shrink:0;}
+.pb-btns{display:flex;gap:4px;flex-shrink:0;}
+.pb-pt-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid;font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;line-height:1;font-family:'Noto Sans JP',sans-serif;}
+.pb-pt-btn.plus{background:rgba(0,255,170,0.1);border-color:rgba(0,255,170,0.4);color:var(--correct);}
+.pb-pt-btn.plus:hover{background:rgba(0,255,170,0.25);transform:scale(1.1);}
+.pb-pt-btn.minus{background:rgba(255,51,85,0.1);border-color:rgba(255,51,85,0.4);color:var(--wrong);}
+.pb-pt-btn.minus:hover{background:rgba(255,51,85,0.25);transform:scale(1.1);}
+.pb-add-row{display:flex;gap:6px;margin-top:4px;}
+.pb-input{flex:1;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:50px;padding:7px 12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;color:#fff;outline:none;}
+.pb-input:focus{border-color:rgba(255,215,0,0.5);}
+.pb-add-btn{background:rgba(255,215,0,0.12);border:1.5px solid rgba(255,215,0,0.35);border-radius:50px;padding:7px 14px;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:var(--gold);white-space:nowrap;transition:all 0.15s;}
+.pb-add-btn:hover{background:rgba(255,215,0,0.22);}
+@keyframes scorePop{0%{transform:scale(1);}40%{transform:scale(1.35);}100%{transform:scale(1);}}
+.score-pop{animation:scorePop 0.3s ease;}
+
+/* ── disabled 共通スタイル ──
+   disabled属性を付けるだけで自動的に非活性表示になります。
+   活性時は何も書く必要はありません。
+*/
+button:disabled,
+label.btn-export input[type="file"]:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(60%);
+  pointer-events: none;
+  box-shadow: none !important;
+}
+/* ジャンルカード非活性（locked:trueのとき） */
+.genre-card.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(60%);
+  pointer-events: none;
+}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:rgba(255,170,0,0.3);border-radius:3px;}
+@media(max-width:480px){
+  .choices-grid{grid-template-columns:1fr;}
+  .genre-grid{grid-template-columns:1fr 1fr;}
+  .quiz-nav{grid-template-columns:1fr 1fr;row-gap:8px;}
+  .btn-nav.btn-list{grid-column:1/-1;}
+  .mgmt-genre-item{flex-wrap:wrap;}
+}
+</style>
+</head>
+<body>
+<div class="coins-bg" id="coins-bg"></div>
+
+<!-- ポイントボード -->
+<div id="point-board">
+  <div class="pb-header">
+    <div class="pb-title">🏆 ポイント</div>
+    <div class="pb-actions">
+      <button class="pb-btn-sm danger" onclick="resetAllPoints()">リセット</button>
+    </div>
+  </div>
+  <div class="pb-player-list" id="pb-player-list"></div>
+  <div class="pb-add-row">
+    <input class="pb-input" id="pb-name-input" placeholder="参加者名を入力" maxlength="10" onkeydown="if(event.key==='Enter') addPlayer()" />
+    <button class="pb-add-btn" onclick="addPlayer()">＋ 追加</button>
+  </div>
+</div>
+<button id="point-toggle" onclick="togglePointBoard()">
+  <span class="pt-icon">🏆</span>
+  <span class="pt-label" id="pt-label">ポイント</span>
+</button>
+
+<!-- カットイン -->
+<div id="cutin-overlay">
+  <div class="cutin-bg" id="cutin-bg"></div>
+  <div class="cutin-lines" id="cutin-lines"></div>
+  <div class="cutin-text-wrap" id="cutin-text">
+    <div class="cutin-label">HAYAOSHI MODE</div>
+    <div class="cutin-title">早　押　し！</div>
+  </div>
+</div>
+
+<!-- TITLE -->
+<div class="screen active" id="screen-title">
+  <div class="title-screen">
+    <div class="slot-display">
+      <div class="slot-reel">🎮</div>
+      <div class="slot-reel">🏆</div>
+      <div class="slot-reel">🎯</div>
+    </div>
+    <div class="title-label">GUNDAN QUIZ BATTLE</div>
+    <h1 class="title-main">軍団<br>常識クイズ</h1>
+    <p class="title-sub">パチスロ・漫画・アニメ、なんでもクイズ！</p>
+    <button class="btn-start" onclick="showGenre()">▶ GAME START</button>
+    <div class="title-deco-line">★ ★ ★</div>
+  </div>
+</div>
+
+<!-- GENRE SELECT -->
+<div class="screen" id="screen-genre">
+  <div class="page-wrap">
+    <div class="page-top">
+      <button class="btn-back" onclick="showTitle()">← もどる</button>
+      <h2 class="page-title">ジャンルを選ぼう</h2>
+      <button class="btn-back" style="border-color:rgba(100,180,255,0.4);color:#88ccff;" onclick="showManage()">🛠️ 問題管理</button>
+    </div>
+    <button class="btn-random" onclick="startAllMix()">🎲 全問MIX（全ジャンルランダム）</button>
+    <div class="genre-grid" id="genre-grid"></div>
+  </div>
+</div>
+
+<!-- QUESTION LIST -->
+<div class="screen" id="screen-questions">
+  <div class="page-wrap">
+    <div class="page-top">
+      <button class="btn-back" onclick="showGenre()">← もどる</button>
+      <h2 class="page-title" id="qs-title">問題を選ぼう</h2>
+      <span class="page-badge" id="qs-count"></span>
+      <button class="btn-reset" onclick="resetAnswers()">🔄 リセット</button>
+    </div>
+    <button class="btn-random" onclick="showQuiz(0,true)">🔀 ランダム出題</button>
+    <div class="question-list" id="question-list"></div>
+  </div>
+</div>
+
+<!-- 4択クイズ -->
+<div class="screen" id="screen-quiz">
+  <div class="page-wrap">
+    <div class="quiz-topbar">
+      <div class="quiz-progress-wrap">
+        <div class="quiz-progress-label" id="progress-label">1 / 1</div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:100%"></div></div>
+      </div>
+      <button class="btn-icon" id="btn-audio" onclick="playAudio()" title="読み上げ">🔊</button>
+      <button class="btn-back" onclick="backToList()">一覧</button>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-badge-row">
+        <span class="quiz-genre-badge" id="q-genre-badge">ジャンル</span>
+        <span class="quiz-q-num" id="q-num">問題 1</span>
+      </div>
+      <div class="quiz-media" id="q-media"></div>
+      <p class="quiz-question" id="q-text">問題文</p>
+    </div>
+    <div class="choices-grid" id="choices-grid"></div>
+    <button class="btn-show-answer" id="btn-show-answer" onclick="showAnswer()">💡 答えを見る</button>
+    <div class="explanation-box" id="explanation-box">
+      <div class="explanation-title">📖 解説</div>
+      <p class="explanation-text" id="explanation-text"></p>
+      <div class="explanation-media" id="explanation-media"></div>
+      <div class="explanation-audio" id="explanation-audio" style="display:none">
+        <span class="explanation-audio-label">🔊 音声</span>
+        <audio controls id="explanation-audio-player"></audio>
+      </div>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-nav" id="btn-prev" onclick="navigate(-1)">← 前の問題</button>
+      <button class="btn-nav btn-list" onclick="backToList()">📋 一覧</button>
+      <button class="btn-nav" id="btn-next" onclick="navigate(1)">次の問題 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 早押しクイズ -->
+<div class="screen" id="screen-hayaoshi">
+  <div class="page-wrap">
+    <div class="quiz-topbar">
+      <div class="quiz-progress-wrap">
+        <div class="quiz-progress-label" id="h-progress-label">1 / 1</div>
+        <div class="progress-bar"><div class="progress-fill" id="h-progress-fill" style="width:100%"></div></div>
+      </div>
+      <button class="btn-back" onclick="backToList()">一覧</button>
+    </div>
+    <div class="hayaoshi-card" id="hayaoshi-card" onclick="hayaoshiCardClick()">
+      <div class="hayaoshi-badge-row">
+        <span class="hayaoshi-badge" id="h-genre-badge">早押し</span>
+        <span class="hayaoshi-q-num" id="h-q-num">問題 1</span>
+      </div>
+      <div class="hayaoshi-media" id="h-media"></div>
+      <p class="hayaoshi-question" id="h-question"></p>
+      <p class="hayaoshi-hint" id="h-hint">スペース / クリック で停止</p>
+    </div>
+    <p class="hayaoshi-stopped-hint" id="h-stopped-hint">⌨️ Enter / 右クリック で正解を表示</p>
+    <button class="btn-reveal" id="btn-reveal" onclick="revealAnswer()" style="display:none">✅ 正解を見る</button>
+    <div class="hayaoshi-answer-area" id="h-answer-area">
+      <div class="hayaoshi-answer-label">💡 正解</div>
+      <p class="hayaoshi-answer-text" id="h-answer-text"></p>
+      <p class="hayaoshi-explanation" id="h-explanation-text"></p>
+      <div class="explanation-media" id="h-explanation-media"></div>
+      <div class="explanation-audio" id="h-explanation-audio" style="display:none">
+        <span class="explanation-audio-label">🔊 音声</span>
+        <audio controls id="h-explanation-audio-player"></audio>
+      </div>
+    </div>
+    <div class="quiz-nav" style="margin-top:8px;">
+      <button class="btn-nav" id="h-btn-prev" onclick="hNavigate(-1)">← 前の問題</button>
+      <button class="btn-nav btn-list" onclick="backToList()">📋 一覧</button>
+      <button class="btn-nav" id="h-btn-next" onclick="hNavigate(1)">次の問題 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 問題管理：ジャンル一覧 -->
+<div class="screen" id="screen-manage">
+  <div class="page-wrap">
+    <div class="page-top">
+      <button class="btn-back" onclick="showGenre()">← もどる</button>
+      <h2 class="page-title">問題管理</h2>
+    </div>
+    <button class="btn-primary" onclick="showManageGenreForm(null)">＋ 新しいジャンルを追加</button>
+    <div class="mgmt-genre-list" id="mgmt-genre-list"></div>
+    <button class="btn-export" onclick="exportJS()">📥 questions.js として出力</button>
+  </div>
+</div>
+
+<!-- 問題管理：ジャンル編集フォーム -->
+<div class="screen" id="screen-manage-genre">
+  <div class="page-wrap">
+    <div class="page-top">
+      <button class="btn-back" onclick="showManage()">← もどる</button>
+      <h2 class="page-title" id="mgf-title">ジャンル編集</h2>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">ジャンル情報</div>
+      <div class="form-row">
+        <label class="form-label">ジャンルID（半角英数・変更不可）</label>
+        <input class="form-input" id="mgf-id" placeholder="例：heiwa" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">ジャンル名</label>
+        <input class="form-input" id="mgf-name" placeholder="例：HEIWA" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">説明文</label>
+        <input class="form-input" id="mgf-desc" placeholder="例：平和パチスロのクイズ" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">テーマカラー（CSS色コード）</label>
+        <input class="form-input" id="mgf-color" placeholder="例：#ff6600" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">ロゴ画像URL（なければ空欄）</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="form-input" id="mgf-logo" placeholder="例：images/logo/heiwa.png" />
+          <button class="btn-file-pick" onclick="pickFile('mgf-logo','image')">📁</button>
+        </div>
+        <p class="form-note">空欄の場合はジャンル名がテキストロゴとして表示されます</p>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" onclick="saveGenre()">💾 保存</button>
+      <button class="btn-cancel" onclick="showManage()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- 問題管理：ジャンル内問題一覧 -->
+<div class="screen" id="screen-manage-questions">
+  <div class="page-wrap">
+    <div class="page-top">
+      <button class="btn-back" onclick="showManage()">← もどる</button>
+      <h2 class="page-title" id="mqf-genre-title">問題一覧</h2>
+      <span class="page-badge" id="mqf-count"></span>
+    </div>
+    <button class="btn-primary" onclick="showManageQForm(null)">＋ 新しい問題を追加</button>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <button class="btn-export" style="flex:1;font-size:12px;padding:10px;" onclick="exportCSV()">📤 CSVで出力</button>
+      <label class="btn-export" style="flex:1;font-size:12px;padding:10px;text-align:center;cursor:pointer;">
+        📥 CSVで取り込む
+        <input type="file" accept=".csv" style="display:none" onchange="importCSV(event)" />
+      </label>
+    </div>
+    <div class="mgmt-q-list" id="mgmt-q-list"></div>
+  </div>
+</div>
+
+<!-- 問題管理：問題編集フォーム -->
+<div class="screen" id="screen-manage-qform">
+  <div class="page-wrap">
+    <div class="page-top">
+      <button class="btn-back" onclick="showManageQuestions()">← もどる</button>
+      <h2 class="page-title" id="mqf-title">問題編集</h2>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">基本設定</div>
+      <div class="form-row">
+        <label class="form-label">問題タイプ</label>
+        <select class="form-select" id="mqf-type" onchange="toggleQFormType()">
+          <option value="yontaku">4択問題</option>
+          <option value="hayaoshi">早押し問題</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">一覧表示タイトル（短め）</label>
+        <input class="form-input" id="mqf-title-input" placeholder="例：このキャラクターの名前は？" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">問題文（問題ページに表示される文）</label>
+        <textarea class="form-textarea" id="mqf-text" placeholder="例：このキャラクターの名前は何でしょう？"></textarea>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">メディア</div>
+      <div class="form-row">
+        <label class="form-label">画像URL（なければ空欄）</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="form-input" id="mqf-media" placeholder="例：images/heiwa/q1.png または https://..." />
+          <button class="btn-file-pick" onclick="pickFile('mqf-media','image')">📁</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">音声URL（なければ空欄）</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="form-input" id="mqf-audio" placeholder="例：audio/q1.mp3 または https://..." />
+          <button class="btn-file-pick" onclick="pickFile('mqf-audio','audio')">📁</button>
+        </div>
+      </div>
+    </div>
+    <!-- 4択専用 -->
+    <div id="mqf-yontaku-section">
+      <div class="form-section">
+        <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+         <span>選択肢（正解のラジオボタンを選択）</span>
+         <button class="btn-file-pick" onclick="shuffleChoices()" type="button">🔀 シャッフル</button>
+        </div>
+        <div class="form-choices">
+          <div class="form-choice-row">
+            <span class="form-choice-label">A</span>
+            <input class="form-input" id="mqf-c0" placeholder="選択肢A" style="flex:1" />
+            <input type="radio" name="correct" class="correct-radio" value="0" id="mqf-r0" />
+            <label class="correct-radio-label" for="mqf-r0">正解</label>
+          </div>
+          <div class="form-choice-row">
+            <span class="form-choice-label">B</span>
+            <input class="form-input" id="mqf-c1" placeholder="選択肢B" style="flex:1" />
+            <input type="radio" name="correct" class="correct-radio" value="1" id="mqf-r1" />
+            <label class="correct-radio-label" for="mqf-r1">正解</label>
+          </div>
+          <div class="form-choice-row">
+            <span class="form-choice-label">C</span>
+            <input class="form-input" id="mqf-c2" placeholder="選択肢C" style="flex:1" />
+            <input type="radio" name="correct" class="correct-radio" value="2" id="mqf-r2" />
+            <label class="correct-radio-label" for="mqf-r2">正解</label>
+          </div>
+          <div class="form-choice-row">
+            <span class="form-choice-label">D</span>
+            <input class="form-input" id="mqf-c3" placeholder="選択肢D" style="flex:1" />
+            <input type="radio" name="correct" class="correct-radio" value="3" id="mqf-r3" />
+            <label class="correct-radio-label" for="mqf-r3">正解</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 早押し専用 -->
+    <div id="mqf-hayaoshi-section" style="display:none">
+      <div class="form-section">
+        <div class="form-section-title">正解テキスト</div>
+        <div class="form-row">
+          <label class="form-label">正解（停止後に表示される答え）</label>
+          <input class="form-input" id="mqf-answer" placeholder="例：吉宗" />
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">解説（任意）</div>
+      <div class="form-row">
+        <label class="form-label">解説テキスト</label>
+        <textarea class="form-textarea" id="mqf-explanation" placeholder="正解後に表示する解説文（なければ空欄）"></textarea>
+      </div>
+      <div class="form-row">
+        <label class="form-label">解説画像・動画URL</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="form-input" id="mqf-exp-media" placeholder="例：images/heiwa/exp1.png または https://..." />
+          <button class="btn-file-pick" onclick="pickFile('mqf-exp-media','image')">📁</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">解説音声URL</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="form-input" id="mqf-exp-audio" placeholder="例：audio/exp1.mp3 または https://..." />
+          <button class="btn-file-pick" onclick="pickFile('mqf-exp-audio','audio')">📁</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" onclick="saveQuestion()">💾 保存</button>
+      <button class="btn-cancel" onclick="showManageQuestions()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script src="questions.js"></script>
+<script>
+/* ============================================================
+   データ管理（localStorage + questions.js ハイブリッド）
+============================================================ */
+const LS_KEY = 'gundan_quiz_genres';
+
+function loadGenres() {
+  const base = JSON.parse(JSON.stringify(DEFAULT_GENRES));
+  let lsData = null;
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) lsData = JSON.parse(saved);
+  } catch(e) {}
+  if (!lsData) return base;
+  lsData.forEach(lsGenre => {
+    const idx = base.findIndex(g => g.id === lsGenre.id);
+    if (idx !== -1) {
+      const lockedVal = base[idx].locked; // questions.jsのlockedを退避
+      base[idx] = lsGenre;
+      if (lockedVal !== undefined) base[idx].locked = lockedVal; // 必ず上書き
+    } else {
+      base.push(lsGenre);
+    }
+  });
+  return base;
+}
+function saveGenres() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(GENRES)); } catch(e) {}
+}
+let GENRES = loadGenres();
+
+/* ============================================================
+   状態変数
+============================================================ */
+let currentGenre         = null;
+let currentQuestionIndex = 0;
+let answeredMap          = {};
+let randomOrder          = null;
+let _mixQuestions        = [];
+let _hayaoshiTimer       = null;
+let _hayaoshiCharIdx     = 0;
+let _hayaoshiText        = '';
+let _hayaoshiStopped     = false;
+let _hayaoshiRevealed    = false;
+let _hayaoshiSpeed       = 80;  // ms/文字（小さいほど速い）
+let _editGenreId         = null;
+let _editQIndex          = null;
+
+/* ============================================================
+   共通ヘルパー
+============================================================ */
+function getCurrentQuestion() {
+  const isMix = currentGenre === '__maker_mix__';
+  const actualIndex = randomOrder ? randomOrder[currentQuestionIndex] : currentQuestionIndex;
+  return isMix ? _mixQuestions[actualIndex] : GENRES.find(g => g.id === currentGenre).questions[actualIndex];
+}
+function getTotal() {
+  if (currentGenre === '__maker_mix__') return _mixQuestions.length;
+  const g = GENRES.find(g => g.id === currentGenre);
+  return g ? g.questions.length : 0;
+}
+function getAnswerKey(q) {
+  const isMix = currentGenre === '__maker_mix__';
+  if (isMix) return `${q._genreId}-${q._origIndex}`;
+  const actualIndex = randomOrder ? randomOrder[currentQuestionIndex] : currentQuestionIndex;
+  return `${currentGenre}-${actualIndex}`;
+}
+function getGenreName() {
+  if (currentGenre === '__maker_mix__') {
+    const q = getCurrentQuestion();
+    return q ? (q._genreName || 'MIX') : 'MIX';
+  }
+  const g = GENRES.find(g => g.id === currentGenre);
+  return g ? g.name : '';
+}
+function genNextId(questions) {
+  return questions.length > 0 ? Math.max(...questions.map(q => q.id || 0)) + 1 : 1;
+}
+
+/* ============================================================
+   背景コイン
+============================================================ */
+(function(){
+  const c = document.getElementById('coins-bg');
+  const s = ['🪙','⭐','💫','✨','🎯','🏆','📖','🎮'];
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className = 'coin';
+    el.textContent = s[Math.floor(Math.random() * s.length)];
+    el.style.left = Math.random() * 100 + '%';
+    el.style.fontSize = (12 + Math.random() * 14) + 'px';
+    const dur = 9 + Math.random() * 14;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay = (-Math.random() * dur) + 's';
+    c.appendChild(el);
+  }
+})();
+
+/* ============================================================
+   画面遷移
+============================================================ */
+function showScreen(id) {
+  stopHayaoshiTimer();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function showTitle()  { showScreen('screen-title'); }
+function showGenre()  { renderGenreGrid(); showScreen('screen-genre'); }
+function showQuestions(gid) {
+  if (gid) currentGenre = gid;
+  renderQuestionList();
+  showScreen('screen-questions');
+}
+function backToList() {
+  if (currentGenre === '__maker_mix__') showGenre();
+  else showQuestions();
+}
+
+/* ============================================================
+   クイズ開始
+============================================================ */
+function showQuiz(i, useRandom = false) {
+  if (useRandom) {
+    const g = GENRES.find(g => g.id === currentGenre);
+    randomOrder = [...Array(g.questions.length).keys()].sort(() => Math.random() - 0.5);
+    currentQuestionIndex = 0;
+  } else {
+    randomOrder = null;
+    currentQuestionIndex = i;
+  }
+  dispatchQuiz();
+}
+function dispatchQuiz() {
+  const q = getCurrentQuestion();
+  if ((q.type || 'yontaku') === 'hayaoshi') startHayaoshi();
+  else { renderQuiz(); showScreen('screen-quiz'); }
+}
+
+/* ============================================================
+   MIX
+============================================================ */
+function startMakerMix() {
+  currentGenre = '__maker_mix__';
+  const allQ = GENRES.flatMap(g =>
+    g.questions.map((q, qi) => ({ ...q, _genreId: g.id, _genreName: g.name, _origIndex: qi }))
+  );
+  _mixQuestions = allQ.sort(() => Math.random() - 0.5);
+  randomOrder = [...Array(_mixQuestions.length).keys()];
+  currentQuestionIndex = 0;
+  dispatchQuiz();
+}
+function startAllMix() { startMakerMix(); }
+
+/* ============================================================
+   ジャンル一覧
+============================================================ */
+function renderGenreGrid() {
+  document.getElementById('genre-grid').innerHTML = GENRES.map(g => {
+    const logo = g.logo
+      ? `<img src="${g.logo}" alt="${g.name}">`
+      : `<div class="genre-logo-text" style="color:${g.color}">${g.logoText || g.name}</div>`;
+    const lockedClass = g.locked ? ' locked' : '';
+    return `<div class="genre-card${lockedClass}" style="--genre-color:${g.color}" onclick="${g.locked ? '' : `showQuestions('${g.id}')`}">
+      <div class="genre-logo-wrap">${logo}</div>
+      <div class="genre-name">${g.name}</div>
+      <div class="genre-desc">${g.desc}</div>
+      <div class="genre-count">${g.questions.length}問</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   問題一覧
+============================================================ */
+function renderQuestionList() {
+  const g = GENRES.find(g => g.id === currentGenre);
+  if (!g) return;
+  document.getElementById('qs-title').textContent = g.name;
+  document.getElementById('qs-count').textContent = `全${g.questions.length}問`;
+  document.getElementById('question-list').innerHTML = g.questions.map((q, i) => {
+    const ans  = answeredMap[`${g.id}-${i}`];
+    const st   = ans !== undefined ? `<span class="q-status">${ans ? '✅' : '❌'}</span>` : '';
+    const type = q.type || 'yontaku';
+    const tb   = `<span class="q-type-badge ${type}">${type === 'hayaoshi' ? '早押し' : '4択'}</span>`;
+    return `<div class="q-item" onclick="showQuiz(${i})">
+      <div class="q-num">${i + 1}</div>
+      <div class="q-text">${q.title || q.text}</div>
+      ${tb}${st}<span class="q-arrow">›</span>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   解説メディア共通レンダラー
+============================================================ */
+function renderExplanationMedia(q, mediaId, audioId, audioPlayerId) {
+  const mediaEl = document.getElementById(mediaId);
+  if (q.explanationMedia) {
+    const isV = /\.(mp4|webm|ogg)$/i.test(q.explanationMedia);
+    mediaEl.innerHTML = isV
+      ? `<video controls><source src="${q.explanationMedia}"></video>`
+      : `<img src="${q.explanationMedia}" alt="解説画像">`;
+  } else {
+    mediaEl.innerHTML = '';
+  }
+  const audioEl     = document.getElementById(audioId);
+  const audioPlayer = document.getElementById(audioPlayerId);
+  if (q.explanationAudio) {
+    audioPlayer.src = q.explanationAudio;
+    audioEl.style.display = 'flex';
+  } else {
+    audioEl.style.display = 'none';
+    audioPlayer.src = '';
+  }
+}
+
+/* ============================================================
+   4択クイズ
+============================================================ */
+function renderQuiz() {
+  const q     = getCurrentQuestion();
+  const total = getTotal();
+  const key   = getAnswerKey(q);
+  const done  = answeredMap[key] !== undefined;
+
+  document.getElementById('progress-label').textContent = `${currentQuestionIndex + 1} / ${total}`;
+  document.getElementById('progress-fill').style.width  = `${((currentQuestionIndex + 1) / total) * 100}%`;
+  document.getElementById('q-genre-badge').textContent  = getGenreName();
+  document.getElementById('q-num').textContent          = `問題 ${currentQuestionIndex + 1}`;
+
+  const md = document.getElementById('q-media');
+  if (q.media) {
+    const isV = /\.(mp4|webm|ogg)$/i.test(q.media);
+    md.innerHTML = isV ? `<video controls><source src="${q.media}"></video>` : `<img src="${q.media}" alt="問題画像">`;
+  } else { md.innerHTML = ''; }
+
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('btn-audio').classList.toggle('no-audio', !q.audio && !('speechSynthesis' in window));
+
+  const L = ['A','B','C','D'];
+  document.getElementById('choices-grid').innerHTML = q.choices.map((c, i) => {
+    let cls = 'choice-btn', st = '';
+    if (done) {
+      if (i === q.correct) { cls += ' correct'; st = '<span class="correct-stamp">✓</span>'; }
+      else cls += ' dimmed';
+    }
+    return `<button class="${cls}" ${done ? 'disabled' : ''} onclick="answer(${i})">
+      <span class="choice-label">${L[i]}</span><span>${c}</span>${st}
+    </button>`;
+  }).join('');
+
+  document.getElementById('explanation-text').textContent = q.explanation || '';
+  const hasExp = !!(done && (q.explanation || q.explanationMedia || q.explanationAudio));
+  if (done) renderExplanationMedia(q, 'explanation-media', 'explanation-audio', 'explanation-audio-player');
+  document.getElementById('explanation-box').classList.toggle('show', hasExp);
+  document.getElementById('btn-show-answer').style.display = done ? 'none' : 'block';
+  document.getElementById('btn-prev').disabled = currentQuestionIndex === 0;
+  document.getElementById('btn-next').disabled = currentQuestionIndex === total - 1;
+}
+
+function answer(ci) {
+  const q   = getCurrentQuestion();
+  const key = getAnswerKey(q);
+  answeredMap[key] = ci === q.correct;
+  document.querySelectorAll('.choice-btn').forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.correct)                  { b.classList.add('correct'); b.innerHTML += '<span class="correct-stamp">✓</span>'; }
+    else if (i === ci && i !== q.correct) { b.classList.add('wrong'); }
+    else                                  { b.classList.add('dimmed'); }
+  });
+  if (q.explanation || q.explanationMedia || q.explanationAudio) {
+    document.getElementById('explanation-text').textContent = q.explanation || '';
+    renderExplanationMedia(q, 'explanation-media', 'explanation-audio', 'explanation-audio-player');
+    document.getElementById('explanation-box').classList.add('show');
+  }
+  document.getElementById('btn-show-answer').style.display = 'none';
+}
+
+function showAnswer() {
+  const q = getCurrentQuestion();
+  document.querySelectorAll('.choice-btn').forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.correct) { b.classList.add('correct-only'); b.innerHTML += '<span class="correct-stamp">✓</span>'; }
+  });
+  if (q.explanation || q.explanationMedia || q.explanationAudio) {
+    document.getElementById('explanation-text').textContent = q.explanation || '';
+    renderExplanationMedia(q, 'explanation-media', 'explanation-audio', 'explanation-audio-player');
+    document.getElementById('explanation-box').classList.add('show');
+  }
+  document.getElementById('btn-show-answer').style.display = 'none';
+}
+
+function navigate(d) {
+  const n = currentQuestionIndex + d;
+  if (n < 0 || n >= getTotal()) return;
+  currentQuestionIndex = n;
+  const q = getCurrentQuestion();
+  if ((q.type || 'yontaku') === 'hayaoshi') startHayaoshi();
+  else { renderQuiz(); showScreen('screen-quiz'); }
+}
+
+/* ============================================================
+   カットイン
+============================================================ */
+function playCutin(callback) {
+  const overlay  = document.getElementById('cutin-overlay');
+  const bg       = document.getElementById('cutin-bg');
+  const linesDiv = document.getElementById('cutin-lines');
+  const textWrap = document.getElementById('cutin-text');
+  overlay.classList.add('active');
+  overlay.style.opacity = '1';
+  bg.style.opacity = '1';
+  linesDiv.innerHTML = '';
+  textWrap.classList.remove('show');
+  for (let i = 0; i < 6; i++) {
+    const line = document.createElement('div');
+    line.className = 'cutin-line';
+    line.style.top  = (10 + i * 14) + '%';
+    line.style.animationDelay = (i * 0.06) + 's';
+    linesDiv.appendChild(line);
+  }
+  setTimeout(() => { textWrap.classList.add('show'); }, 200);
+  setTimeout(() => {
+    overlay.style.transition = 'opacity 0.4s';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      overlay.style.transition = '';
+      bg.style.opacity = '0';
+      if (callback) callback();
+    }, 400);
+  }, 1000);
+}
+
+/* ============================================================
+   早押し
+============================================================ */
+function startHayaoshi() {
+  playCutin(() => {
+    _hayaoshiStopped  = false;
+    _hayaoshiRevealed = false;
+    _hayaoshiCharIdx  = 0;
+    const q     = getCurrentQuestion();
+    const total = getTotal();
+    document.getElementById('h-progress-label').textContent = `${currentQuestionIndex + 1} / ${total}`;
+    document.getElementById('h-progress-fill').style.width  = `${((currentQuestionIndex + 1) / total) * 100}%`;
+    document.getElementById('h-genre-badge').textContent    = getGenreName();
+    document.getElementById('h-q-num').textContent          = `問題 ${currentQuestionIndex + 1}`;
+    document.getElementById('h-question').textContent       = '';
+    document.getElementById('h-hint').textContent           = 'スペース / クリック で停止';
+    document.getElementById('h-hint').classList.remove('hidden');
+    document.getElementById('h-stopped-hint').classList.remove('show');
+    document.getElementById('h-answer-area').classList.remove('show');
+    document.getElementById('btn-reveal').style.display     = 'none';
+    document.getElementById('hayaoshi-card').classList.remove('stopped');
+    document.getElementById('h-explanation-media').innerHTML = '';
+    document.getElementById('h-explanation-audio').style.display = 'none';
+    const md = document.getElementById('h-media');
+    if (q.media) {
+      const isV = /\.(mp4|webm|ogg)$/i.test(q.media);
+      md.innerHTML = isV ? `<video controls><source src="${q.media}"></video>` : `<img src="${q.media}" alt="問題画像">`;
+      md.style.display = 'block';
+    } else { md.innerHTML = ''; md.style.display = 'none'; }
+    document.getElementById('h-btn-prev').disabled = currentQuestionIndex === 0;
+    document.getElementById('h-btn-next').disabled = currentQuestionIndex === total - 1;
+    _hayaoshiText = q.text;
+    showScreen('screen-hayaoshi');
+    startHayaoshiTimer();
+  });
+}
+
+function startHayaoshiTimer() {
+  stopHayaoshiTimer();
+  _hayaoshiTimer = setInterval(() => {
+    if (_hayaoshiCharIdx >= _hayaoshiText.length) {
+      stopHayaoshiTimer();
+      if (!_hayaoshiStopped) {
+        _hayaoshiStopped = true;
+        document.getElementById('hayaoshi-card').classList.add('stopped');
+        document.getElementById('h-hint').classList.add('hidden');
+        document.getElementById('btn-reveal').style.display = 'block';
+      }
+      return;
+    }
+    _hayaoshiCharIdx++;
+    document.getElementById('h-question').textContent = _hayaoshiText.slice(0, _hayaoshiCharIdx);
+  }, _hayaoshiSpeed);
+}
+
+function stopHayaoshiTimer() {
+  if (_hayaoshiTimer) { clearInterval(_hayaoshiTimer); _hayaoshiTimer = null; }
+}
+
+function hayaoshiStop() {
+  if (_hayaoshiRevealed) return;
+  if (!_hayaoshiStopped) {
+    stopHayaoshiTimer();
+    _hayaoshiStopped = true;
+    document.getElementById('hayaoshi-card').classList.add('stopped');
+    document.getElementById('h-hint').textContent = '▶ スペース / クリック で再開';
+    document.getElementById('h-hint').classList.remove('hidden');
+    document.getElementById('h-stopped-hint').classList.add('show');
+  } else {
+    _hayaoshiStopped = false;
+    document.getElementById('hayaoshi-card').classList.remove('stopped');
+    document.getElementById('h-hint').textContent = 'スペース / クリック で停止';
+    document.getElementById('h-stopped-hint').classList.remove('show');
+    startHayaoshiTimer();
+  }
+}
+
+function hayaoshiCardClick() { hayaoshiStop(); }
+
+function revealAnswer() {
+  if (_hayaoshiRevealed) return;
+  _hayaoshiRevealed = true;
+  const q = getCurrentQuestion();
+  document.getElementById('h-answer-text').textContent      = q.answer || '';
+  document.getElementById('h-explanation-text').textContent = q.explanation || '';
+  renderExplanationMedia(q, 'h-explanation-media', 'h-explanation-audio', 'h-explanation-audio-player');
+  document.getElementById('h-answer-area').classList.add('show');
+  document.getElementById('btn-reveal').style.display       = 'none';
+  document.getElementById('h-stopped-hint').classList.remove('show');
+}
+
+function hNavigate(d) {
+  const n = currentQuestionIndex + d;
+  if (n < 0 || n >= getTotal()) return;
+  currentQuestionIndex = n;
+  const q = getCurrentQuestion();
+  if ((q.type || 'yontaku') === 'hayaoshi') startHayaoshi();
+  else { renderQuiz(); showScreen('screen-quiz'); }
+}
+
+/* ============================================================
+   キーボード・右クリック
+============================================================ */
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('screen-hayaoshi').classList.contains('active')) return;
+  if (e.code === 'Space') { e.preventDefault(); hayaoshiStop(); }
+  if (e.code === 'Enter') { e.preventDefault(); if (_hayaoshiStopped && !_hayaoshiRevealed) revealAnswer(); }
+});
+document.addEventListener('contextmenu', (e) => {
+  if (!document.getElementById('screen-hayaoshi').classList.contains('active')) return;
+  e.preventDefault();
+  if (_hayaoshiStopped && !_hayaoshiRevealed) revealAnswer();
+});
+
+/* ============================================================
+   リセット・音声
+============================================================ */
+function resetAnswers() {
+  if (!confirm('このジャンルの回答履歴をリセットしますか？')) return;
+  const g = GENRES.find(g => g.id === currentGenre);
+  if (!g) return;
+  g.questions.forEach((_, i) => delete answeredMap[`${g.id}-${i}`]);
+  renderQuestionList();
+}
+function playAudio() {
+  const q = getCurrentQuestion();
+  if (q.audio) { new Audio(q.audio).play(); return; }
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(q.text);
+    u.lang = 'ja-JP'; u.rate = 0.9; speechSynthesis.speak(u);
+  }
+}
+
+/* ============================================================
+   ファイル選択ダイアログ
+   ジャンルIDを使ってパスを自動生成して結合する
+   画像: images/{genreId}/{filename}
+   音声: audio/{genreId}/{filename}
+============================================================ */
+function pickFile(targetId, type) {
+  const genreId  = _editGenreId || 'common';
+  const basePath = type === 'audio'
+    ? `audio/${genreId}/`
+    : `images/${genreId}/`;
+  const accept = type === 'image' ? 'image/*' : 'audio/*';
+  const input  = document.createElement('input');
+  input.type   = 'file';
+  input.accept = accept;
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    document.getElementById(targetId).value = basePath + file.name;
+  };
+  input.click();
+}
+
+/* ============================================================
+   問題管理：ジャンル一覧
+============================================================ */
+function showManage() {
+  renderManageGenreList();
+  showScreen('screen-manage');
+}
+function renderManageGenreList() {
+  document.getElementById('mgmt-genre-list').innerHTML = GENRES.map(g => `
+    <div class="mgmt-genre-item">
+      <div class="mgmt-genre-name">${g.name}</div>
+      <div class="mgmt-genre-count">${g.questions.length}問</div>
+      <button class="btn-sm add" onclick="showManageQuestions('${g.id}')">問題一覧</button>
+      <button class="btn-sm edit" onclick="showManageGenreForm('${g.id}')">編集</button>
+      <button class="btn-sm del" onclick="deleteGenre('${g.id}')">削除</button>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   問題管理：ジャンル編集フォーム
+============================================================ */
+function showManageGenreForm(genreId) {
+  _editGenreId = genreId;
+  if (genreId) {
+    const g = GENRES.find(g => g.id === genreId);
+    document.getElementById('mgf-title').textContent = 'ジャンル編集';
+    document.getElementById('mgf-id').value    = g.id;
+    document.getElementById('mgf-id').disabled = true;
+    document.getElementById('mgf-name').value  = g.name;
+    document.getElementById('mgf-desc').value  = g.desc;
+    document.getElementById('mgf-color').value = g.color;
+    document.getElementById('mgf-logo').value  = g.logo || '';
+  } else {
+    document.getElementById('mgf-title').textContent = '新しいジャンル';
+    document.getElementById('mgf-id').value    = '';
+    document.getElementById('mgf-id').disabled = false;
+    document.getElementById('mgf-name').value  = '';
+    document.getElementById('mgf-desc').value  = '';
+    document.getElementById('mgf-color').value = '#888888';
+    document.getElementById('mgf-logo').value  = '';
+  }
+  showScreen('screen-manage-genre');
+}
+function saveGenre() {
+  const id    = document.getElementById('mgf-id').value.trim();
+  const name  = document.getElementById('mgf-name').value.trim();
+  const desc  = document.getElementById('mgf-desc').value.trim();
+  const color = document.getElementById('mgf-color').value.trim();
+  const logo  = document.getElementById('mgf-logo').value.trim() || null;
+  if (!id || !name) { alert('ジャンルIDとジャンル名は必須です'); return; }
+  if (!_editGenreId && GENRES.find(g => g.id === id)) { alert('同じIDのジャンルが既に存在します'); return; }
+  if (_editGenreId) {
+    const g = GENRES.find(g => g.id === _editGenreId);
+    g.name = name; g.desc = desc; g.color = color; g.logo = logo; g.logoText = name;
+  } else {
+    GENRES.push({ id, name, logo, logoText: name, desc, color, questions: [] });
+  }
+  saveGenres();
+  showManage();
+}
+function deleteGenre(genreId) {
+  const g = GENRES.find(g => g.id === genreId);
+  if (!confirm(`「${g.name}」を削除しますか？\n問題も全て削除されます。`)) return;
+  GENRES.splice(GENRES.findIndex(g => g.id === genreId), 1);
+  saveGenres();
+  renderManageGenreList();
+}
+
+/* ============================================================
+   問題管理：問題一覧
+============================================================ */
+function showManageQuestions(genreId) {
+  if (genreId) _editGenreId = genreId;
+  const g = GENRES.find(g => g.id === _editGenreId);
+  document.getElementById('mqf-genre-title').textContent = g.name;
+  document.getElementById('mqf-count').textContent = `全${g.questions.length}問`;
+  document.getElementById('mgmt-q-list').innerHTML = g.questions.map((q, i) => {
+    const type = q.type || 'yontaku';
+    const tb = `<span class="q-type-badge ${type}" style="font-size:10px;padding:2px 6px;">${type === 'hayaoshi' ? '早押し' : '4択'}</span>`;
+    return `<div class="mgmt-q-item">
+      <div class="mgmt-q-num">${i + 1}</div>
+      <div class="mgmt-q-text">${tb} ${q.title || q.text}</div>
+      <div class="mgmt-q-actions">
+        <button class="btn-sm edit" onclick="showManageQForm(${i})">編集</button>
+        <button class="btn-sm del" onclick="deleteQuestion(${i})">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+  showScreen('screen-manage-questions');
+}
+function deleteQuestion(qi) {
+  const g = GENRES.find(g => g.id === _editGenreId);
+  if (!confirm(`問題「${g.questions[qi].title || g.questions[qi].text}」を削除しますか？`)) return;
+  g.questions.splice(qi, 1);
+  saveGenres();
+  showManageQuestions();
+}
+
+/* ============================================================
+   問題管理：問題編集フォーム
+============================================================ */
+function showManageQForm(qi) {
+  _editQIndex = qi;
+  const g = GENRES.find(g => g.id === _editGenreId);
+  document.getElementById('mqf-title').textContent = qi === null ? '新しい問題' : '問題を編集';
+  if (qi !== null) {
+    const q    = g.questions[qi];
+    const type = q.type || 'yontaku';
+    document.getElementById('mqf-type').value          = type;
+    document.getElementById('mqf-title-input').value   = q.title || '';
+    document.getElementById('mqf-text').value          = q.text || '';
+    document.getElementById('mqf-media').value         = q.media || '';
+    document.getElementById('mqf-audio').value         = q.audio || '';
+    document.getElementById('mqf-explanation').value   = q.explanation || '';
+    document.getElementById('mqf-exp-media').value     = q.explanationMedia || '';
+    document.getElementById('mqf-exp-audio').value     = q.explanationAudio || '';
+    if (type === 'yontaku') {
+      (q.choices || ['','','','']).forEach((c, i) => { document.getElementById(`mqf-c${i}`).value = c; });
+      const radio = document.querySelector(`input[name="correct"][value="${q.correct ?? 0}"]`);
+      if (radio) radio.checked = true;
+    } else {
+      document.getElementById('mqf-answer').value = q.answer || '';
+    }
+  } else {
+    document.getElementById('mqf-type').value          = 'yontaku';
+    document.getElementById('mqf-title-input').value   = '';
+    document.getElementById('mqf-text').value          = '';
+    document.getElementById('mqf-media').value         = '';
+    document.getElementById('mqf-audio').value         = '';
+    document.getElementById('mqf-explanation').value   = '';
+    document.getElementById('mqf-exp-media').value     = '';
+    document.getElementById('mqf-exp-audio').value     = '';
+    ['mqf-c0','mqf-c1','mqf-c2','mqf-c3'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('mqf-answer').value        = '';
+    const r = document.querySelector('input[name="correct"]');
+    if (r) r.checked = true;
+  }
+  toggleQFormType();
+  showScreen('screen-manage-qform');
+}
+function toggleQFormType() {
+  const type = document.getElementById('mqf-type').value;
+  document.getElementById('mqf-yontaku-section').style.display  = type === 'yontaku'  ? 'block' : 'none';
+  document.getElementById('mqf-hayaoshi-section').style.display = type === 'hayaoshi' ? 'block' : 'none';
+}
+/* ============================================================
+   CSVインポート・エクスポート
+============================================================ */
+function exportCSV() {
+  const g = GENRES.find(g => g.id === _editGenreId);
+  const header = 'type(1=4択/2=早押し),タイトル,問題文,選択肢A,選択肢B,選択肢C,選択肢D,正解(A/B/C/D),正解テキスト(早押し),解説,画像URL,音声URL,解説画像URL,解説音声URL\n';
+
+  let rows = '';
+  if (g.questions.length === 0) {
+    // 問題が0件の場合はサンプル行を出力
+    rows = [
+      'yontaku,問題タイトル,問題文をここに入力,選択肢A,選択肢B,選択肢C,選択肢D,A,,解説文（任意）,,,,'  ,
+      'hayaoshi,早押しタイトル,問題文をここに入力,,,,,,正解テキスト,解説文（任意）,,,,'
+    ].join('\n');
+  } else {
+    const correctLabels = ['A','B','C','D'];
+    rows = g.questions.map(q => {
+      const type    = q.type || 'yontaku';
+      const typeNum = type === 'hayaoshi' ? '2' : '1';
+      const cols  = [
+        typeNum,
+        escapeCsvVal(q.title || ''),
+        escapeCsvVal(q.text  || ''),
+        type === 'yontaku' ? escapeCsvVal(q.choices?.[0] || '') : '',
+        type === 'yontaku' ? escapeCsvVal(q.choices?.[1] || '') : '',
+        type === 'yontaku' ? escapeCsvVal(q.choices?.[2] || '') : '',
+        type === 'yontaku' ? escapeCsvVal(q.choices?.[3] || '') : '',
+        type === 'yontaku' ? (correctLabels[q.correct] ?? '') : '',
+        type === 'hayaoshi' ? escapeCsvVal(q.answer || '') : '',
+        escapeCsvVal(q.explanation      || ''),
+        escapeCsvVal(q.media            || ''),
+        escapeCsvVal(q.audio            || ''),
+        escapeCsvVal(q.explanationMedia || ''),
+        escapeCsvVal(q.explanationAudio || '')
+      ];
+      return cols.join(',');
+    }).join('\n');
+  }
+
+  const bom  = '\uFEFF';
+  const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `${g.id}_questions.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// CSV値のエスケープ（カンマ・改行・ダブルクォートを含む場合はダブルクォートで囲む）
+function escapeCsvVal(val) {
+  const str = String(val);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      // BOM除去
+      let text = e.target.result.replace(/^\uFEFF/, '');
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { alert('データが見つかりません'); return; }
+
+      // 1行目はヘッダーなのでスキップ
+      const rows = lines.slice(1);
+      const questions = [];
+
+      rows.forEach((line, ri) => {
+        // カンマ区切り（ダブルクォート内のカンマを考慮）
+        const cols = parseCSVLine(line);
+        const typeRaw = (cols[0] || '1').trim();
+        const type    = typeRaw === '2' ? 'hayaoshi' : 'yontaku';
+        const title   = (cols[1] || '').trim();
+        const text    = (cols[2] || '').trim();
+        const cA      = (cols[3] || '').trim();
+        const cB      = (cols[4] || '').trim();
+        const cC      = (cols[5] || '').trim();
+        const cD      = (cols[6] || '').trim();
+        const correct = (cols[7] || '').trim().toUpperCase();
+        const answer  = (cols[8] || '').trim();
+        const exp              = (cols[9]  || '').trim() || null;
+        const media            = (cols[10] || '').trim() || null;
+        const audio            = (cols[11] || '').trim() || null;
+        const explanationMedia = (cols[12] || '').trim() || null;
+        const explanationAudio = (cols[13] || '').trim() || null;
+
+        if (!text) return;
+
+        const q = {
+          id: ri + 1,
+          type,
+          title: title || text,
+          text,
+          media,
+          audio,
+          explanation: exp,
+          explanationMedia,
+          explanationAudio
+        };
+
+        if (type === 'hayaoshi') {
+          q.answer = answer;
+        } else {
+          const correctMap = { A: 0, B: 1, C: 2, D: 3 };
+          q.choices = [cA, cB, cC, cD];
+          q.correct = correctMap[correct] ?? 0;
+        }
+        questions.push(q);
+      });
+
+      if (questions.length === 0) { alert('有効な問題が見つかりませんでした'); return; }
+
+      if (!confirm(`${questions.length}問を取り込みます。\n既存の問題は全て上書きされます。よろしいですか？`)) return;
+
+      const g = GENRES.find(g => g.id === _editGenreId);
+      g.questions = questions;
+      saveGenres();
+      showManageQuestions();
+      alert(`${questions.length}問を取り込みました！`);
+    } catch(err) {
+      alert('CSVの読み込みに失敗しました: ' + err.message);
+    }
+    // inputをリセット（同じファイルを再度選べるように）
+    event.target.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// CSVの1行をパース（ダブルクォート対応）
+function parseCSVLine(line) {
+  const result = [];
+  let current  = '';
+  let inQuote  = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuote && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuote = !inQuote; }
+    } else if (ch === ',' && !inQuote) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+function shuffleChoices() {
+  // 現在の選択肢と正解を取得
+  const choices = [0,1,2,3].map(i => ({
+    text:      document.getElementById(`mqf-c${i}`).value,
+    isCorrect: document.querySelector(`input[name="correct"][value="${i}"]`).checked
+  }));
+
+  // シャッフル
+  for (let i = choices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [choices[i], choices[j]] = [choices[j], choices[i]];
+  }
+
+  // 入力欄に反映・正解ラジオを更新
+  choices.forEach((c, i) => {
+    document.getElementById(`mqf-c${i}`).value = c.text;
+    if (c.isCorrect) {
+      document.querySelector(`input[name="correct"][value="${i}"]`).checked = true;
+    }
+  });
+}
+function saveQuestion() {
+  const g              = GENRES.find(g => g.id === _editGenreId);
+  const type           = document.getElementById('mqf-type').value;
+  const title          = document.getElementById('mqf-title-input').value.trim();
+  const text           = document.getElementById('mqf-text').value.trim();
+  const media          = document.getElementById('mqf-media').value.trim() || null;
+  const audio          = document.getElementById('mqf-audio').value.trim() || null;
+  const explanation      = document.getElementById('mqf-explanation').value.trim() || null;
+  const explanationMedia = document.getElementById('mqf-exp-media').value.trim() || null;
+  const explanationAudio = document.getElementById('mqf-exp-audio').value.trim() || null;
+  if (!text) { alert('問題文は必須です'); return; }
+  let q = { type, title: title || text, text, media, audio, explanation, explanationMedia, explanationAudio };
+  if (type === 'yontaku') {
+    const choices = [0,1,2,3].map(i => document.getElementById(`mqf-c${i}`).value.trim());
+    if (choices.some(c => !c)) { alert('選択肢A〜Dを全て入力してください'); return; }
+    const correctEl = document.querySelector('input[name="correct"]:checked');
+    if (!correctEl) { alert('正解を選択してください'); return; }
+    q.choices = choices;
+    q.correct = parseInt(correctEl.value);
+  } else {
+    const answer = document.getElementById('mqf-answer').value.trim();
+    if (!answer) { alert('正解テキストを入力してください'); return; }
+    q.answer = answer;
+  }
+  if (_editQIndex !== null) {
+    q.id = g.questions[_editQIndex].id;
+    g.questions[_editQIndex] = q;
+  } else {
+    q.id = genNextId(g.questions);
+    g.questions.push(q);
+  }
+  saveGenres();
+  showManageQuestions();
+}
+
+/* ============================================================
+   questions.js として出力
+============================================================ */
+function exportJS() {
+  const dataStr = JSON.stringify(GENRES, null, 2);
+  const header =
+`/*
+  ============================================================
+  ★ 問題データファイル ★
+  quiz-game.html と同じフォルダに置いてください。
+
+  【問題のtype】
+    type: "yontaku"  → 4択問題（省略時もyontakuとして扱う）
+    type: "hayaoshi" → 早押し問題
+
+  【4択問題の書き方】
+    title           : 問題一覧に表示される短いタイトル
+    text            : 問題ページに表示される問題文
+    media           : 画像/動画パス または URL（不要なら null）
+    audio           : 音声ファイルパス または URL（不要なら null）
+    choices         : 選択肢の配列（4つ）
+    correct         : 正解のインデックス（A=0, B=1, C=2, D=3）
+    explanation     : 解説テキスト（不要なら null）
+    explanationMedia: 解説画像/動画パス または URL（不要なら null）
+    explanationAudio: 解説音声パス または URL（不要なら null）
+
+  【早押し問題の書き方】
+    title           : 問題一覧に表示される短いタイトル
+    text            : 一文字ずつ流れる問題文
+    media           : 画像/動画パス または URL（不要なら null）
+    audio           : 音声ファイルパス または URL（不要なら null）
+    answer          : 正解テキスト（停止後に表示される）
+    explanation     : 解説テキスト（不要なら null）
+    explanationMedia: 解説画像/動画パス または URL（不要なら null）
+    explanationAudio: 解説音声パス または URL（不要なら null）
+
+  【ジャンルロゴ画像】
+    logo: "images/logo/heiwa_logo.png"  ← パスまたはURL
+    logo: null → テキストロゴが自動表示
+  ============================================================
+*/
+`;
+  const content = header + 'const DEFAULT_GENRES = ' + dataStr + ';\n';
+  try {
+    if (window.showSaveFilePicker) {
+      window.showSaveFilePicker({
+        suggestedName: 'questions.js',
+        types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }]
+      }).then(handle => handle.createWritable()).then(writable => {
+        writable.write(content); writable.close();
+      }).catch(() => {});
+    } else {
+      const blob = new Blob([content], { type: 'text/javascript;charset=utf-8' });
+      const a    = document.createElement('a');
+      a.href     = URL.createObjectURL(blob);
+      a.download = 'questions.js';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  } catch(e) { alert('出力に失敗しました: ' + e.message); }
+}
+
+/* ============================================================
+   ポイントボード
+============================================================ */
+const PB_KEY = 'gundan_quiz_players';
+let _players = loadPlayers();
+let _pbOpen  = false;
+
+function loadPlayers() {
+  try {
+    const s = localStorage.getItem(PB_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return [];
+}
+function savePlayers() {
+  try { localStorage.setItem(PB_KEY, JSON.stringify(_players)); } catch(e) {}
+}
+function togglePointBoard() {
+  _pbOpen = !_pbOpen;
+  document.getElementById('point-board').classList.toggle('open', _pbOpen);
+  if (_pbOpen) renderPointBoard();
+}
+function renderPointBoard() {
+  const sorted = [..._players].sort((a, b) => b.score - a.score);
+  const ranks  = ['🥇','🥈','🥉'];
+  document.getElementById('pb-player-list').innerHTML = sorted.map((p, i) => {
+    const origIdx = _players.findIndex(pl => pl.name === p.name);
+    const rank = ranks[i] || `${i + 1}`;
+    return `<div class="pb-player ${i === 0 && p.score > 0 ? 'top' : ''}">
+      <span class="pb-rank">${rank}</span>
+      <span class="pb-name">${p.name}</span>
+      <span class="pb-score" id="pb-score-${origIdx}">${p.score}</span>
+      <div class="pb-btns">
+        <button class="pb-pt-btn plus"  onclick="changePoint(${origIdx}, 1)">＋</button>
+        <button class="pb-pt-btn minus" onclick="changePoint(${origIdx}, -1)">－</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('pt-label').textContent =
+    _players.length > 0 ? `ポイント（${_players.length}人）` : 'ポイント';
+}
+function addPlayer() {
+  const input = document.getElementById('pb-name-input');
+  const name  = input.value.trim();
+  if (!name) return;
+  if (_players.find(p => p.name === name)) { alert('同じ名前の参加者が既にいます'); return; }
+  _players.push({ name, score: 0 });
+  savePlayers();
+  input.value = '';
+  renderPointBoard();
+}
+function changePoint(idx, delta) {
+  if (idx < 0 || idx >= _players.length) return;
+  _players[idx].score += delta;
+  savePlayers();
+  renderPointBoard();
+  const el = document.getElementById(`pb-score-${idx}`);
+  if (el) { el.classList.remove('score-pop'); void el.offsetWidth; el.classList.add('score-pop'); }
+}
+function resetAllPoints() {
+  if (!confirm('全員のポイントを0にリセットしますか？')) return;
+  _players.forEach(p => p.score = 0);
+  savePlayers();
+  renderPointBoard();
+}
+
+// 初期ラベル更新
+renderPointBoard();
+</script>
+</body>
+</html>

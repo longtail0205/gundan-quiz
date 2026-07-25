@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>軍団クイズ - ホスト</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#ffd700;--gold2:#ffaa00;--gold3:#cc8800;--bg-dark:#0a0412;--bg-card:#1a0e2e;--bg-card2:#221540;--neon-cyan:#00ffee;--neon-pink:#ff44cc;--correct:#00ffaa;--wrong:#ff3355;--text-muted:#aaa8cc;--radius:14px;--radius-lg:20px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg-dark);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px 16px 48px;overflow-x:hidden;color:#fff;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,#3a0060 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 100%,#001a44 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 10% 80%,#440010 0%,transparent 60%);pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:800px;position:relative;z-index:1;}
+.screen{display:none;animation:fadeIn 0.3s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* COMMON */
+.page-title{font-family:'Dela Gothic One',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em;text-shadow:0 0 12px rgba(255,215,0,0.4);margin-bottom:20px;}
+.card{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+.card-title{font-size:12px;font-weight:700;color:var(--gold2);letter-spacing:0.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,215,0,0.15);}
+.btn{display:block;width:100%;padding:14px;border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.15s;border:none;letter-spacing:0.05em;text-align:center;}
+.btn-primary{background:linear-gradient(135deg,#ff2244,#cc0033);color:#fff;box-shadow:0 4px 0 #660011,0 0 20px rgba(255,34,68,0.4);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 0 #660011,0 0 30px rgba(255,34,68,0.6);}
+.btn-primary:active{transform:translateY(2px);box-shadow:none;}
+.btn-gold{background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,170,0,0.15));color:var(--gold);border:1.5px solid rgba(255,215,0,0.4);}
+.btn-gold:hover{background:linear-gradient(135deg,rgba(255,215,0,0.35),rgba(255,170,0,0.25));box-shadow:0 0 16px rgba(255,215,0,0.3);}
+.btn-green{background:linear-gradient(135deg,rgba(0,255,170,0.2),rgba(0,200,130,0.15));color:var(--correct);border:1.5px solid rgba(0,255,170,0.4);}
+.btn-green:hover{background:linear-gradient(135deg,rgba(0,255,170,0.35),rgba(0,200,130,0.25));box-shadow:0 0 16px rgba(0,255,170,0.3);}
+.btn-red{background:linear-gradient(135deg,rgba(255,51,85,0.2),rgba(200,0,40,0.15));color:var(--wrong);border:1.5px solid rgba(255,51,85,0.4);}
+.btn-red:hover{background:linear-gradient(135deg,rgba(255,51,85,0.35),rgba(200,0,40,0.25));box-shadow:0 0 16px rgba(255,51,85,0.3);}
+.btn-sm{padding:8px 16px;font-size:12px;width:auto;display:inline-block;}
+.btn:disabled{opacity:0.3;cursor:not-allowed;transform:none !important;box-shadow:none !important;}
+.btn-row{display:flex;gap:10px;margin-top:12px;}
+.btn-row .btn{flex:1;}
+.input{width:100%;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;font-family:'Noto Sans JP',sans-serif;font-size:14px;color:#fff;outline:none;}
+.input:focus{border-color:rgba(255,215,0,0.6);}
+
+/* SETUP */
+.setup-title{font-family:'Dela Gothic One',sans-serif;font-size:clamp(28px,6vw,42px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:8px;text-align:center;}
+.setup-sub{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:32px;}
+
+/* ROOM INFO */
+.room-id-display{background:rgba(255,215,0,0.08);border:2px solid rgba(255,215,0,0.3);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:16px;}
+.room-id-label{font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.1em;}
+.room-id-value{font-family:'Dela Gothic One',sans-serif;font-size:32px;color:var(--gold);letter-spacing:0.2em;text-shadow:0 0 12px rgba(255,215,0,0.4);}
+.room-url{font-size:11px;color:var(--text-muted);margin-top:6px;word-break:break-all;}
+
+/* PLAYERS */
+.player-list{display:flex;flex-direction:column;gap:8px;}
+.player-item{background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,215,0,0.15);border-radius:var(--radius);padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.player-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold2),var(--gold3));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#1a0800;flex-shrink:0;}
+.player-name{flex:1;font-size:14px;font-weight:700;}
+.player-badge{font-size:10px;padding:2px 8px;border-radius:50px;background:rgba(255,34,68,0.15);border:1px solid rgba(255,34,68,0.4);color:#ff8899;}
+.player-count{font-size:13px;color:var(--text-muted);margin-bottom:10px;}
+
+/* QUESTION SELECT */
+.genre-btn{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.15);border-radius:var(--radius);padding:14px 18px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.15s;margin-bottom:8px;width:100%;text-align:left;}
+.genre-btn:hover{border-color:var(--genre-color,var(--gold));background:var(--bg-card2);}
+.genre-btn-name{font-size:15px;font-weight:700;color:#ddd;flex:1;}
+.genre-btn-count{font-size:12px;color:var(--text-muted);}
+.q-select-item{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.12);border-radius:var(--radius);padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;margin-bottom:8px;}
+.q-select-item:hover{border-color:rgba(255,215,0,0.5);background:var(--bg-card2);}
+.q-select-num{background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#1a0800;font-weight:900;font-size:11px;min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.q-select-text{flex:1;font-size:13px;color:#ddd;font-weight:700;}
+.q-type-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:50px;flex-shrink:0;}
+.q-type-badge.yontaku{background:rgba(0,255,170,0.1);border:1px solid rgba(0,255,170,0.3);color:#00ddaa;}
+.q-type-badge.hayaoshi{background:rgba(255,68,204,0.15);border:1px solid rgba(255,68,204,0.4);color:#ff88dd;}
+.q-type-badge.kizyutsu{background:rgba(100,180,255,0.15);border:1px solid rgba(100,180,255,0.4);color:#88ccff;}
+.back-btn{background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,215,0,0.3);border-radius:50px;padding:8px 18px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--gold2);transition:all 0.15s;margin-bottom:16px;display:inline-block;}
+.back-btn:hover{background:rgba(255,215,0,0.1);}
+
+/* QUIZ HOST */
+.quiz-card{background:var(--bg-card);border:2px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;position:relative;}
+.quiz-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon-pink),var(--gold),var(--neon-cyan));}
+.quiz-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.4);color:var(--gold2);margin-bottom:10px;}
+.quiz-question{font-family:'Noto Sans JP',sans-serif;font-size:clamp(16px,3vw,20px);font-weight:900;color:#fff;line-height:1.6;margin-bottom:12px;}
+.quiz-media img{width:100%;max-height:300px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,0.2);margin-bottom:12px;}
+.choices-display{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.choice-display{background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:12px;display:flex;gap:8px;align-items:flex-start;}
+.choice-label{background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.4);color:var(--gold2);font-size:11px;font-weight:900;min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.choice-text{font-size:13px;color:#ddd;font-weight:700;}
+.choice-display.correct-ans{border-color:var(--correct);background:rgba(0,255,170,0.08);}
+.choice-display.correct-ans .choice-label{background:var(--correct);color:#003322;border-color:var(--correct);}
+
+/* 早押し状態 */
+.hayaoshi-status{text-align:center;padding:20px;margin-bottom:16px;}
+.hayaoshi-waiting{font-size:14px;color:var(--text-muted);letter-spacing:0.1em;}
+.hayaoshi-pressed{font-family:'Dela Gothic One',sans-serif;font-size:24px;color:var(--neon-pink);text-shadow:0 0 16px var(--neon-pink);animation:pulse 0.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.hayaoshi-name{font-family:'Dela Gothic One',sans-serif;font-size:32px;color:var(--gold);text-shadow:0 0 16px rgba(255,215,0,0.6);margin-top:8px;}
+
+/* 回答状況 */
+.answer-status{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.answer-chip{padding:6px 12px;border-radius:50px;font-size:12px;font-weight:700;border:1.5px solid;}
+.answer-chip.waiting{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.15);color:var(--text-muted);}
+.answer-chip.done{background:rgba(0,255,170,0.08);border-color:rgba(0,255,170,0.3);color:var(--correct);}
+
+/* 記述回答一覧 */
+.kizyutsu-answers{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.kizyutsu-answer-item{background:rgba(255,255,255,0.04);border:1.5px solid rgba(100,180,255,0.2);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:12px;}
+.kizyutsu-answer-name{font-size:12px;color:var(--text-muted);font-weight:700;min-width:80px;flex-shrink:0;}
+.kizyutsu-answer-text{flex:1;font-size:14px;color:#fff;font-weight:700;}
+.kizyutsu-judge-btns{display:flex;gap:6px;flex-shrink:0;}
+.judge-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:transparent;}
+.judge-btn.correct{border-color:rgba(0,255,170,0.4);color:var(--correct);}
+.judge-btn.correct:hover,.judge-btn.correct.selected{background:rgba(0,255,170,0.2);border-color:var(--correct);}
+.judge-btn.wrong{border-color:rgba(255,51,85,0.4);color:var(--wrong);}
+.judge-btn.wrong:hover,.judge-btn.wrong.selected{background:rgba(255,51,85,0.2);border-color:var(--wrong);}
+
+/* 4択結果 */
+.yontaku-results{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.result-item{background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:center;gap:10px;}
+.result-player{font-size:13px;font-weight:700;flex:1;}
+.result-choice{font-size:12px;padding:3px 10px;border-radius:50px;font-weight:700;}
+.result-choice.correct{background:rgba(0,255,170,0.15);border:1px solid rgba(0,255,170,0.4);color:var(--correct);}
+.result-choice.wrong{background:rgba(255,51,85,0.1);border:1px solid rgba(255,51,85,0.3);color:var(--wrong);}
+
+/* ポイントボード */
+#point-toggle{position:fixed;bottom:20px;right:20px;z-index:200;background:linear-gradient(135deg,#1a0e2e,#221540);border:2px solid rgba(255,215,0,0.4);border-radius:50px;padding:10px 18px;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;color:var(--gold);box-shadow:0 4px 20px rgba(0,0,0,0.5);transition:all 0.2s;}
+#point-toggle:hover{border-color:var(--gold);}
+#point-board{position:fixed;bottom:72px;right:20px;z-index:199;width:280px;max-height:60vh;overflow-y:auto;background:linear-gradient(180deg,#120820,#0a0412);border:2px solid rgba(255,215,0,0.3);border-radius:var(--radius-lg);padding:14px;box-shadow:0 8px 40px rgba(0,0,0,0.7);display:none;}
+#point-board.open{display:block;}
+.pb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,215,0,0.15);}
+.pb-title{font-family:'Dela Gothic One',sans-serif;font-size:14px;color:var(--gold);}
+.pb-reset{background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:50px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;color:#ff8888;font-family:'Noto Sans JP',sans-serif;}
+.pb-player-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.pb-player{background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,215,0,0.1);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;}
+.pb-player.top{border-color:rgba(255,215,0,0.4);background:rgba(255,215,0,0.05);}
+.pb-rank{font-size:14px;min-width:20px;text-align:center;}
+.pb-name{flex:1;font-size:12px;font-weight:700;color:#ddd;}
+.pb-score{font-family:'Dela Gothic One',sans-serif;font-size:18px;color:var(--gold);min-width:30px;text-align:right;}
+.pb-btns{display:flex;gap:3px;}
+.pb-pt-btn{width:24px;height:24px;border-radius:50%;border:1.5px solid;font-size:14px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:transparent;font-family:'Noto Sans JP',sans-serif;}
+.pb-pt-btn.plus{border-color:rgba(0,255,170,0.4);color:var(--correct);}
+.pb-pt-btn.plus:hover{background:rgba(0,255,170,0.2);}
+.pb-pt-btn.minus{border-color:rgba(255,51,85,0.4);color:var(--wrong);}
+.pb-pt-btn.minus:hover{background:rgba(255,51,85,0.2);}
+.pb-add-row{display:flex;gap:6px;}
+.pb-input{flex:1;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:50px;padding:6px 10px;font-family:'Noto Sans JP',sans-serif;font-size:12px;color:#fff;outline:none;}
+.pb-add-btn{background:rgba(255,215,0,0.12);border:1.5px solid rgba(255,215,0,0.35);border-radius:50px;padding:6px 12px;font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--gold);}
+
+/* 状態バー */
+.status-bar{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:50px;padding:8px 16px;display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:12px;color:var(--text-muted);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#444;flex-shrink:0;}
+.status-dot.active{background:var(--correct);box-shadow:0 0 8px var(--correct);}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:rgba(255,170,0,0.3);border-radius:3px;}
+@media(max-width:480px){.choices-display{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- セットアップ -->
+<div class="screen active" id="screen-setup">
+  <div style="text-align:center;padding:40px 0 32px;">
+    <div class="setup-title">軍団クイズ</div>
+    <div class="setup-sub">ホスト画面</div>
+  </div>
+  <div class="card">
+    <div class="card-title">ルームを作成する</div>
+    <button class="btn btn-primary" onclick="createRoom()">🎮 ルームを作成</button>
+  </div>
+</div>
+
+<!-- 待機室 -->
+<div class="screen" id="screen-waiting">
+  <div class="page-title">待機室</div>
+  <div class="status-bar">
+    <div class="status-dot active" id="status-dot"></div>
+    <span id="status-text">参加者を待っています...</span>
+  </div>
+  <div class="room-id-display">
+    <div class="room-id-label">ROOM ID</div>
+    <div class="room-id-value" id="room-id-display">----</div>
+    <div class="room-url" id="room-url-display"></div>
+  </div>
+  <button class="btn btn-gold" onclick="copyRoomUrl()" style="margin-bottom:16px;">🔗 参加URLをコピー</button>
+  <div class="card">
+    <div class="card-title">参加者 <span id="player-count-label">0人</span></div>
+    <div class="player-list" id="player-list"></div>
+  </div>
+  <button class="btn btn-primary" onclick="showQuestionSelect()" id="btn-start-quiz">📝 問題を選んで出題する</button>
+</div>
+
+<!-- ジャンル選択 -->
+<div class="screen" id="screen-genre">
+  <button class="back-btn" onclick="backToWaiting()">← もどる</button>
+  <div class="page-title">ジャンルを選ぶ</div>
+  <div id="genre-list"></div>
+</div>
+
+<!-- 問題選択 -->
+<div class="screen" id="screen-questions">
+  <button class="back-btn" onclick="showQuestionSelect()">← ジャンルへ</button>
+  <div class="page-title" id="q-select-title">問題を選ぶ</div>
+  <div id="question-list"></div>
+</div>
+
+<!-- クイズ進行 -->
+<div class="screen" id="screen-quiz">
+  <div class="status-bar">
+    <div class="status-dot active"></div>
+    <span id="quiz-status-text">出題中</span>
+    <span style="margin-left:auto;font-size:11px;color:var(--gold2);" id="quiz-room-id"></span>
+  </div>
+
+  <div class="quiz-card" id="quiz-card">
+    <div class="quiz-badge" id="quiz-badge">ジャンル</div>
+    <div class="quiz-media" id="quiz-media"></div>
+    <div class="quiz-question" id="quiz-question">問題文</div>
+    <!-- 4択の選択肢表示 -->
+    <div class="choices-display" id="choices-display"></div>
+  </div>
+
+  <!-- 早押し状態表示 -->
+  <div id="hayaoshi-status-area" style="display:none;">
+    <div class="hayaoshi-status">
+      <div class="hayaoshi-waiting" id="hayaoshi-waiting-text">早押しを待っています...</div>
+      <div class="hayaoshi-pressed" id="hayaoshi-pressed-area" style="display:none;">
+        <div>🔔 早押し！</div>
+        <div class="hayaoshi-name" id="hayaoshi-pressed-name"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-green btn-sm" onclick="judgeHayaoshi(true)" id="btn-hayaoshi-correct" disabled>○ 正解</button>
+      <button class="btn btn-red btn-sm" onclick="judgeHayaoshi(false)" id="btn-hayaoshi-wrong" disabled>× 不正解</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-gold" onclick="revealAnswer()">💡 正解を表示</button>
+    </div>
+  </div>
+
+  <!-- 4択回答状況 -->
+  <div id="yontaku-status-area" style="display:none;">
+    <div class="card">
+      <div class="card-title">回答状況</div>
+      <div class="answer-status" id="answer-status"></div>
+    </div>
+    <div id="yontaku-results-area" style="display:none;">
+      <div class="card">
+        <div class="card-title">回答結果</div>
+        <div class="yontaku-results" id="yontaku-results"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="closeYontaku()" id="btn-close-yontaku">締め切って正解を表示</button>
+    </div>
+  </div>
+
+  <!-- 記述回答状況 -->
+  <div id="kizyutsu-status-area" style="display:none;">
+    <div class="card">
+      <div class="card-title">回答状況</div>
+      <div class="answer-status" id="kizyutsu-answer-status"></div>
+    </div>
+    <div id="kizyutsu-answers-area" style="display:none;">
+      <div class="card">
+        <div class="card-title">全員の回答 - 正誤を判定してください</div>
+        <div class="kizyutsu-answers" id="kizyutsu-answers"></div>
+        <button class="btn btn-green" onclick="submitKizyutsuJudge()" style="margin-top:8px;">✅ 判定を確定する</button>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="closeKizyutsu()" id="btn-close-kizyutsu">締め切って回答を表示</button>
+    </div>
+  </div>
+
+  <!-- 次の問題へ -->
+  <div style="margin-top:16px;">
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="showQuestionSelect()">📝 次の問題を選ぶ</button>
+      <button class="btn btn-gold" onclick="backToWaiting()">🏠 待機室へ</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ポイントボード -->
+<div id="point-board">
+  <div class="pb-header">
+    <div class="pb-title">🏆 ポイント</div>
+    <button class="pb-reset" onclick="resetAllPoints()">リセット</button>
+  </div>
+  <div class="pb-player-list" id="pb-player-list"></div>
+  <div class="pb-add-row">
+    <input class="pb-input" id="pb-name-input" placeholder="参加者名" maxlength="10" onkeydown="if(event.key==='Enter')addPlayer()" />
+    <button class="pb-add-btn" onclick="addPlayer()">＋</button>
+  </div>
+</div>
+<button id="point-toggle" onclick="togglePointBoard()">
+  <span>🏆</span>
+  <span id="pt-label">ポイント</span>
+</button>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, push, onValue, update, remove, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDISToSZkNspKlZyHmQ2LGrdFFXlEUUEjU",
+  authDomain: "gundan-quiz.firebaseapp.com",
+  databaseURL: "https://gundan-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gundan-quiz",
+  storageBucket: "gundan-quiz.firebasestorage.app",
+  messagingSenderId: "1033936435467",
+  appId: "1:1033936435467:web:81650f44cb5e6a093aca0e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+/* ============================================================
+   状態変数
+============================================================ */
+let roomId          = null;
+let currentGenreId  = null;
+let currentQuestion = null;
+let kizyutsuJudges  = {}; // { playerId: true/false }
+let playersRef      = null;
+let answersRef      = null;
+let playersListener = null;
+let answersListener = null;
+
+/* ============================================================
+   画面遷移
+============================================================ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.backToWaiting = () => {
+  cleanupListeners();
+  showScreen('screen-waiting');
+};
+
+/* ============================================================
+   ルーム作成
+============================================================ */
+window.createRoom = async () => {
+  // 6桁のランダムなルームID
+  roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const roomRef = ref(db, `rooms/${roomId}`);
+  await set(roomRef, {
+    status: 'waiting',
+    createdAt: Date.now(),
+    currentQuestion: null
+  });
+
+  document.getElementById('room-id-display').textContent = roomId;
+  const url = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}`;
+  document.getElementById('room-url-display').textContent = url;
+  document.getElementById('quiz-room-id').textContent = `ROOM: ${roomId}`;
+
+  listenPlayers();
+  showScreen('screen-waiting');
+};
+
+window.copyRoomUrl = () => {
+  const url = `${location.origin}${location.pathname.replace('room-host.html', 'room-play.html')}?room=${roomId}`;
+  navigator.clipboard.writeText(url).then(() => alert('URLをコピーしました！\nLINEで参加者に送ってください。'));
+};
+
+/* ============================================================
+   参加者監視
+============================================================ */
+function listenPlayers() {
+  if (playersListener) off(ref(db, `rooms/${roomId}/players`), 'value', playersListener);
+  playersRef = ref(db, `rooms/${roomId}/players`);
+  playersListener = onValue(playersRef, snap => {
+    const players = snap.val() || {};
+    renderPlayers(players);
+    // ポイントボードに参加者を同期
+    syncPlayersToBoard(players);
+  });
+}
+
+function renderPlayers(players) {
+  const list  = document.getElementById('player-list');
+  const count = Object.keys(players).length;
+  document.getElementById('player-count-label').textContent = `${count}人`;
+  list.innerHTML = Object.entries(players).map(([id, p]) => `
+    <div class="player-item">
+      <div class="player-avatar">${p.name.charAt(0)}</div>
+      <div class="player-name">${p.name}</div>
+    </div>
+  `).join('') || '<div style="color:var(--text-muted);font-size:13px;">まだ誰も参加していません</div>';
+}
+
+function syncPlayersToBoard(players) {
+  Object.entries(players).forEach(([id, p]) => {
+    if (!_players.find(pl => pl.name === p.name)) {
+      _players.push({ name: p.name, score: 0 });
+      savePlayers();
+    }
+  });
+  renderPointBoard();
+}
+
+/* ============================================================
+   問題選択
+============================================================ */
+window.showQuestionSelect = () => {
+  renderGenreList();
+  showScreen('screen-genre');
+};
+
+function renderGenreList() {
+  document.getElementById('genre-list').innerHTML = GENRES.map(g => `
+    <button class="genre-btn" style="--genre-color:${g.color}" onclick="selectGenre('${g.id}')">
+      <div class="genre-btn-name">${g.name}</div>
+      <div class="genre-btn-count">${g.questions.length}問</div>
+    </button>
+  `).join('');
+}
+
+window.selectGenre = (genreId) => {
+  currentGenreId = genreId;
+  const g = GENRES.find(g => g.id === genreId);
+  document.getElementById('q-select-title').textContent = g.name;
+  const L = ['A','B','C','D'];
+  const typeLabel = { yontaku:'4択', hayaoshi:'早押し', kizyutsu:'記述' };
+  document.getElementById('question-list').innerHTML = g.questions.map((q, i) => `
+    <div class="q-select-item" onclick="startQuestion('${genreId}', ${i})">
+      <div class="q-select-num">${i+1}</div>
+      <div class="q-select-text">${q.title || q.text}</div>
+      <span class="q-type-badge ${q.type||'yontaku'}">${typeLabel[q.type||'yontaku']}</span>
+    </div>
+  `).join('');
+  showScreen('screen-questions');
+};
+
+/* ============================================================
+   問題出題
+============================================================ */
+window.startQuestion = async (genreId, qIndex) => {
+  const g = GENRES.find(g => g.id === genreId);
+  currentQuestion = { ...g.questions[qIndex], genreName: g.name, qIndex };
+  const type = currentQuestion.type || 'yontaku';
+
+  // Firebaseに現在の問題を書き込む
+  const qData = {
+    genreName  : currentQuestion.genreName,
+    type       : type,
+    text       : currentQuestion.text,
+    media      : currentQuestion.media || null,
+    status     : 'active',
+    startedAt  : Date.now()
+  };
+  if (type === 'yontaku') {
+    qData.choices = currentQuestion.choices;
+  }
+  await set(ref(db, `rooms/${roomId}/currentQuestion`), qData);
+
+  // 回答をリセット
+  await remove(ref(db, `rooms/${roomId}/answers`));
+  kizyutsuJudges = {};
+
+  renderQuizHost();
+  listenAnswers();
+  showScreen('screen-quiz');
+};
+
+function renderQuizHost() {
+  const q    = currentQuestion;
+  const type = q.type || 'yontaku';
+  const L    = ['A','B','C','D'];
+
+  document.getElementById('quiz-badge').textContent    = q.genreName;
+  document.getElementById('quiz-question').textContent = q.text;
+  document.getElementById('quiz-status-text').textContent = type === 'hayaoshi' ? '早押し問題' : type === 'kizyutsu' ? '記述回答問題' : '4択問題';
+
+  const md = document.getElementById('quiz-media');
+  if (q.media) {
+    const isV = /\.(mp4|webm|ogg)$/i.test(q.media);
+    md.innerHTML = isV ? `<video controls style="width:100%;border-radius:10px;"><source src="${q.media}"></video>` : `<img src="${q.media}" alt="問題画像">`;
+  } else { md.innerHTML = ''; }
+
+  // 選択肢表示（4択のみ）
+  const choicesDiv = document.getElementById('choices-display');
+  if (type === 'yontaku') {
+    choicesDiv.innerHTML = q.choices.map((c, i) => `
+      <div class="choice-display ${i === q.correct ? 'correct-ans' : ''}">
+        <span class="choice-label">${L[i]}</span>
+        <span class="choice-text">${c}</span>
+      </div>
+    `).join('');
+    choicesDiv.style.display = 'grid';
+  } else {
+    choicesDiv.style.display = 'none';
+    choicesDiv.innerHTML = '';
+  }
+
+  // エリア切り替え
+  document.getElementById('hayaoshi-status-area').style.display  = type === 'hayaoshi'  ? 'block' : 'none';
+  document.getElementById('yontaku-status-area').style.display   = type === 'yontaku'   ? 'block' : 'none';
+  document.getElementById('kizyutsu-status-area').style.display  = type === 'kizyutsu'  ? 'block' : 'none';
+
+  // 早押し初期化
+  if (type === 'hayaoshi') {
+    document.getElementById('hayaoshi-waiting-text').style.display = 'block';
+    document.getElementById('hayaoshi-pressed-area').style.display = 'none';
+    document.getElementById('btn-hayaoshi-correct').disabled = true;
+    document.getElementById('btn-hayaoshi-wrong').disabled   = true;
+  }
+
+  // 4択初期化
+  if (type === 'yontaku') {
+    document.getElementById('yontaku-results-area').style.display = 'none';
+    document.getElementById('btn-close-yontaku').disabled = false;
+  }
+
+  // 記述初期化
+  if (type === 'kizyutsu') {
+    document.getElementById('kizyutsu-answers-area').style.display = 'none';
+    document.getElementById('btn-close-kizyutsu').disabled = false;
+  }
+}
+
+/* ============================================================
+   回答監視
+============================================================ */
+function listenAnswers() {
+  cleanupAnswerListener();
+  answersRef = ref(db, `rooms/${roomId}/answers`);
+  answersListener = onValue(answersRef, snap => {
+    const answers = snap.val() || {};
+    const type    = currentQuestion ? (currentQuestion.type || 'yontaku') : 'yontaku';
+
+    if (type === 'hayaoshi') updateHayaoshiStatus(answers);
+    else if (type === 'yontaku') updateYontakuStatus(answers);
+    else if (type === 'kizyutsu') updateKizyutsuStatus(answers);
+  });
+}
+
+function cleanupAnswerListener() {
+  if (answersListener && answersRef) { off(answersRef, 'value', answersListener); answersListener = null; }
+}
+
+function cleanupListeners() {
+  cleanupAnswerListener();
+  if (playersListener && playersRef) { off(playersRef, 'value', playersListener); playersListener = null; }
+}
+
+/* ============================================================
+   早押し処理
+============================================================ */
+function updateHayaoshiStatus(answers) {
+  const pressed = Object.values(answers).find(a => a.type === 'hayaoshi');
+  if (pressed) {
+    document.getElementById('hayaoshi-waiting-text').style.display = 'none';
+    document.getElementById('hayaoshi-pressed-area').style.display = 'block';
+    document.getElementById('hayaoshi-pressed-name').textContent   = pressed.playerName;
+    document.getElementById('btn-hayaoshi-correct').disabled = false;
+    document.getElementById('btn-hayaoshi-wrong').disabled   = false;
+  }
+}
+
+window.judgeHayaoshi = async (isCorrect) => {
+  const result = isCorrect ? 'correct' : 'wrong';
+  await update(ref(db, `rooms/${roomId}/currentQuestion`), { judgeResult: result, status: 'judged' });
+  document.getElementById('btn-hayaoshi-correct').disabled = true;
+  document.getElementById('btn-hayaoshi-wrong').disabled   = true;
+};
+
+window.revealAnswer = async () => {
+  await update(ref(db, `rooms/${roomId}/currentQuestion`), { status: 'revealed', answer: currentQuestion.answer || '' });
+};
+
+/* ============================================================
+   4択処理
+============================================================ */
+function updateYontakuStatus(answers) {
+  const snap     = ref(db, `rooms/${roomId}/players`);
+  get(snap).then(pSnap => {
+    const players  = pSnap.val() || {};
+    const statusEl = document.getElementById('answer-status');
+    statusEl.innerHTML = Object.entries(players).map(([id, p]) => {
+      const done = answers[id] !== undefined;
+      return `<div class="answer-chip ${done ? 'done' : 'waiting'}">${p.name} ${done ? '✓' : '…'}</div>`;
+    }).join('');
+  });
+}
+
+window.closeYontaku = async () => {
+  document.getElementById('btn-close-yontaku').disabled = true;
+  await update(ref(db, `rooms/${roomId}/currentQuestion`), {
+    status: 'closed',
+    correctIndex: currentQuestion.correct
+  });
+
+  // 結果を表示
+  const aSnap = await get(ref(db, `rooms/${roomId}/answers`));
+  const pSnap = await get(ref(db, `rooms/${roomId}/players`));
+  const answers = aSnap.val() || {};
+  const players = pSnap.val() || {};
+  const L = ['A','B','C','D'];
+
+  document.getElementById('yontaku-results').innerHTML = Object.entries(players).map(([id, p]) => {
+    const ans = answers[id];
+    if (!ans) return `<div class="result-item"><div class="result-player">${p.name}</div><span class="result-choice wrong">未回答</span></div>`;
+    const isCorrect = ans.choiceIndex === currentQuestion.correct;
+    return `<div class="result-item">
+      <div class="result-player">${p.name}</div>
+      <span class="result-choice ${isCorrect ? 'correct' : 'wrong'}">${L[ans.choiceIndex]} ${ans.choiceText} ${isCorrect ? '✓' : '✗'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('yontaku-results-area').style.display = 'block';
+};
+
+/* ============================================================
+   記述回答処理
+============================================================ */
+function updateKizyutsuStatus(answers) {
+  get(ref(db, `rooms/${roomId}/players`)).then(pSnap => {
+    const players  = pSnap.val() || {};
+    const statusEl = document.getElementById('kizyutsu-answer-status');
+    statusEl.innerHTML = Object.entries(players).map(([id, p]) => {
+      const done = answers[id] !== undefined;
+      return `<div class="answer-chip ${done ? 'done' : 'waiting'}">${p.name} ${done ? '✓' : '…'}</div>`;
+    }).join('');
+  });
+}
+
+window.closeKizyutsu = async () => {
+  document.getElementById('btn-close-kizyutsu').disabled = true;
+  await update(ref(db, `rooms/${roomId}/currentQuestion`), { status: 'closed' });
+
+  const aSnap = await get(ref(db, `rooms/${roomId}/answers`));
+  const pSnap = await get(ref(db, `rooms/${roomId}/players`));
+  const answers = aSnap.val() || {};
+  const players = pSnap.val() || {};
+
+  kizyutsuJudges = {};
+  document.getElementById('kizyutsu-answers').innerHTML = Object.entries(players).map(([id, p]) => {
+    const ans = answers[id];
+    const text = ans ? ans.text : '（未回答）';
+    return `<div class="kizyutsu-answer-item" id="kitem-${id}">
+      <div class="kizyutsu-answer-name">${p.name}</div>
+      <div class="kizyutsu-answer-text">${text}</div>
+      <div class="kizyutsu-judge-btns">
+        <button class="judge-btn correct" onclick="setKizyutsuJudge('${id}', true)" id="kjc-${id}">○</button>
+        <button class="judge-btn wrong"   onclick="setKizyutsuJudge('${id}', false)" id="kjw-${id}">×</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('kizyutsu-answers-area').style.display = 'block';
+};
+
+window.setKizyutsuJudge = (playerId, isCorrect) => {
+  kizyutsuJudges[playerId] = isCorrect;
+  document.getElementById(`kjc-${playerId}`).classList.toggle('selected',  isCorrect);
+  document.getElementById(`kjw-${playerId}`).classList.toggle('selected', !isCorrect);
+};
+
+window.submitKizyutsuJudge = async () => {
+  await update(ref(db, `rooms/${roomId}/currentQuestion`), {
+    status: 'judged',
+    kizyutsuJudges
+  });
+  alert('判定を送信しました！');
+};
+
+/* ============================================================
+   ポイントボード
+============================================================ */
+const PB_KEY = 'gundan_quiz_players';
+let _players = loadPlayers();
+let _pbOpen  = false;
+
+function loadPlayers() {
+  try { const s = localStorage.getItem(PB_KEY); if (s) return JSON.parse(s); } catch(e) {}
+  return [];
+}
+function savePlayers() {
+  try { localStorage.setItem(PB_KEY, JSON.stringify(_players)); } catch(e) {}
+}
+window.togglePointBoard = () => {
+  _pbOpen = !_pbOpen;
+  document.getElementById('point-board').classList.toggle('open', _pbOpen);
+  if (_pbOpen) renderPointBoard();
+};
+function renderPointBoard() {
+  const sorted = [..._players].sort((a, b) => b.score - a.score);
+  const ranks  = ['🥇','🥈','🥉'];
+  document.getElementById('pb-player-list').innerHTML = sorted.map((p, i) => {
+    const origIdx = _players.findIndex(pl => pl.name === p.name);
+    return `<div class="pb-player ${i === 0 && p.score > 0 ? 'top' : ''}">
+      <span class="pb-rank">${ranks[i] || (i+1)}</span>
+      <span class="pb-name">${p.name}</span>
+      <span class="pb-score">${p.score}</span>
+      <div class="pb-btns">
+        <button class="pb-pt-btn plus"  onclick="changePoint(${origIdx},1)">＋</button>
+        <button class="pb-pt-btn minus" onclick="changePoint(${origIdx},-1)">－</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('pt-label').textContent = _players.length > 0 ? `ポイント（${_players.length}人）` : 'ポイント';
+}
+window.addPlayer = () => {
+  const input = document.getElementById('pb-name-input');
+  const name  = input.value.trim();
+  if (!name || _players.find(p => p.name === name)) return;
+  _players.push({ name, score: 0 });
+  savePlayers(); input.value = ''; renderPointBoard();
+};
+window.changePoint = (idx, delta) => {
+  if (idx < 0 || idx >= _players.length) return;
+  _players[idx].score += delta;
+  savePlayers(); renderPointBoard();
+};
+window.resetAllPoints = () => {
+  if (!confirm('全員のポイントをリセットしますか？')) return;
+  _players.forEach(p => p.score = 0);
+  savePlayers(); renderPointBoard();
+};
+renderPointBoard();
+
+/* questions.js のデータ読み込みを待つ */
+window._firebaseReady = true;
+
+</script>
+<script src="questions.js"></script>
+</body>
+</html>
