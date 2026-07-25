@@ -195,10 +195,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="btn btn-primary" onclick="showQuestionModeSelect()" id="btn-start-quiz">📝 問題を出題する</button>
     <button class="btn btn-gold" onclick="showHostTransfer()">👑 ホストを交代</button>
   </div>
-  <div id="random-quiz-area" style="display:none;margin-top:10px;">
-    <button class="btn btn-gold" onclick="startRandomQuiz()" style="background:linear-gradient(135deg,rgba(170,100,255,0.2),rgba(120,50,255,0.15));border-color:rgba(170,100,255,0.5);color:#cc88ff;">🎲 ランダム出題</button>
-    <div id="random-progress" style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
-  </div>
 </div>
 
 <!-- ホスト交代 -->
@@ -341,6 +337,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="card-title">公開済みの回答 - 正誤を判定してください</div>
         <div class="kizyutsu-answers" id="kizyutsu-revealed-answers"></div>
         <button class="btn btn-green" onclick="submitKizyutsuJudge()" style="margin-top:8px;">✅ 判定を確定する</button>
+      </div>
+      <!-- 正解表示ボタン（正解がある問題のみ表示） -->
+      <div id="kizyutsu-show-answer-row" style="display:none;margin-top:12px;">
+        <button class="btn btn-gold" onclick="showKizyutsuAnswer()">💡 正解を全員に表示する</button>
       </div>
     </div>
   </div>
@@ -1029,6 +1029,10 @@ window.closeKizyutsu = async () => {
   document.getElementById('kizyutsu-reveal-area').style.display     = 'block';
   document.getElementById('kizyutsu-revealed-card').style.display   = 'none';
   document.getElementById('kizyutsu-revealed-answers').innerHTML    = '';
+
+  // 正解がある問題なら正解表示ボタンを表示
+  const answerRow = document.getElementById('kizyutsu-show-answer-row');
+  if (answerRow) answerRow.style.display = currentQuestion.answer ? 'block' : 'none';
 };
 
 window.revealOneKizyutsu = async (pid) => {
@@ -1067,6 +1071,14 @@ window.revealAllKizyutsu = async () => {
   for (const d of unrevealed) {
     await window.revealOneKizyutsu(d.id);
   }
+};
+
+window.showKizyutsuAnswer = async () => {
+  const answer = currentQuestion.answer || '';
+  if (!answer) return;
+  await update(ref(db, `rooms/${roomId}/currentQuestion`), { kizyutsuAnswer: answer });
+  const btn = document.getElementById('kizyutsu-show-answer-row');
+  if (btn) btn.style.display = 'none';
 };
 
 window.setKizyutsuJudge = (playerId, isCorrect) => {

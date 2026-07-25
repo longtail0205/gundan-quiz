@@ -344,13 +344,14 @@ function listenQuestion() {
         showScreen('screen-quiz');
       }
     } else if (q.status === 'closed') {
-      // 記述式：kizyutsuRevealedの変化も反映
+      // 記述式：kizyutsuRevealedとkizyutsuAnswerの変化も反映
       if (type === 'kizyutsu') {
         if (!window._kizyutsuClosedHandled) {
           window._kizyutsuClosedHandled = true;
           handleClosed(q);
-        } else if (q.kizyutsuRevealed) {
-          updateKizyutsuRevealedPlay(q.kizyutsuRevealed);
+        } else {
+          if (q.kizyutsuRevealed) updateKizyutsuRevealedPlay(q.kizyutsuRevealed);
+          if (q.kizyutsuAnswer)   showKizyutsuAnswerPlay(q.kizyutsuAnswer);
         }
       } else {
         handleClosed(q);
@@ -380,6 +381,9 @@ function renderQuestion(q) {
   const L    = ['A','B','C','D'];
   window._kizyutsuClosedHandled = false;
   window._jiyuuClosedHandled    = false;
+  // 前の問題の正解表示をリセット
+  const prevAns = document.getElementById('kizyutsu-answer-display');
+  if (prevAns) prevAns.remove();
 
   document.getElementById('play-badge').textContent    = q.genreName || '';
   document.getElementById('play-question').textContent = q.text || '';
@@ -586,6 +590,21 @@ async function handleClosed(q) {
     document.getElementById('kizyutsu-input-area').style.display = 'none';
     document.getElementById('kizyutsu-sent-msg').style.display   = 'none';
   }
+}
+
+// 記述式の正解をゲスト側に表示
+function showKizyutsuAnswerPlay(answer) {
+  // 既に表示済みなら何もしない
+  if (document.getElementById('kizyutsu-answer-display')) return;
+  const resultsArea = document.getElementById('play-results-area');
+  if (!resultsArea) return;
+  const el = document.createElement('div');
+  el.id = 'kizyutsu-answer-display';
+  el.style.cssText = 'background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);border-radius:14px;padding:16px 20px;margin-top:12px;text-align:center;animation:fadeIn 0.3s ease;';
+  el.innerHTML = `
+    <div style="font-size:11px;color:var(--correct);font-weight:700;margin-bottom:8px;letter-spacing:0.08em;">💡 正解</div>
+    <div style="font-family:'Noto Sans JP',sans-serif;font-size:clamp(18px,4vw,24px);font-weight:900;color:var(--correct);text-shadow:0 0 12px rgba(0,255,170,0.4);">${answer}</div>`;
+  resultsArea.appendChild(el);
 }
 
 // 記述式の公開済み回答を反映
