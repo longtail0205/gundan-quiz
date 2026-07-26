@@ -356,6 +356,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
   <!-- 自由回答状況 -->
   <div id="jiyuu-status-area" style="display:none;">
+    <div class="card" id="jiyuu-host-input-card">
+      <div class="card-title">あなたも回答する（任意）</div>
+      <textarea class="adhoc-textarea" id="jiyuu-host-answer" placeholder="回答を入力（任意）..." style="min-height:70px;"></textarea>
+      <button class="btn btn-gold btn-sm" onclick="submitHostJiyuu()" style="margin-top:8px;" id="btn-host-jiyuu-submit">✉️ 回答する</button>
+      <div id="jiyuu-host-sent" style="display:none;font-size:12px;color:var(--correct);margin-top:6px;">✅ 回答しました</div>
+    </div>
     <div class="card">
       <div class="card-title">回答状況</div>
       <div class="answer-status" id="jiyuu-answer-status"></div>
@@ -839,7 +845,7 @@ function renderQuizHost() {
 
   document.getElementById('quiz-badge').textContent    = q.genreName;
   document.getElementById('quiz-question').textContent = q.text;
-  document.getElementById('quiz-status-text').textContent = type === 'hayaoshi' ? '早押し問題' : type === 'kizyutsu' ? '記述回答問題' : '4択問題';
+  document.getElementById('quiz-status-text').textContent = type === 'hayaoshi' ? '早押し問題' : type === 'kizyutsu' ? '記述回答問題' : type === 'jiyuu' ? '自由回答問題' : '4択問題';
 
   const md = document.getElementById('quiz-media');
   if (q.media) {
@@ -894,6 +900,11 @@ function renderQuizHost() {
     document.getElementById('jiyuu-close-row').style.display     = 'flex';
     document.getElementById('btn-close-jiyuu').disabled          = false;
     document.getElementById('jiyuu-revealed-answers').innerHTML  = '';
+    document.getElementById('jiyuu-host-answer').value           = '';
+    document.getElementById('jiyuu-host-answer').disabled        = false;
+    document.getElementById('btn-host-jiyuu-submit').disabled    = false;
+    document.getElementById('jiyuu-host-input-card').style.display = 'block';
+    document.getElementById('jiyuu-host-sent').style.display     = 'none';
   }
 }
 
@@ -1129,16 +1140,38 @@ window.submitKizyutsuJudge = async () => {
 /* ============================================================
    自由回答処理
 ============================================================ */
+const HOST_ANSWER_ID = 'HOST';
+
 function updateJiyuuStatus(answers) {
   get(ref(db, `rooms/${roomId}/players`)).then(pSnap => {
     const players  = pSnap.val() || {};
     const statusEl = document.getElementById('jiyuu-answer-status');
-    statusEl.innerHTML = Object.entries(players).map(([id, p]) => {
+    let html = Object.entries(players).map(([id, p]) => {
       const done = answers[id] !== undefined;
       return `<div class="answer-chip ${done ? 'done' : 'waiting'}">${p.name} ${done ? '✓' : '…'}</div>`;
     }).join('');
+    // ホストが回答していれば表示に追加
+    if (answers[HOST_ANSWER_ID] !== undefined) {
+      const hostName = window._hostName || 'ホスト';
+      html += `<div class="answer-chip done">${hostName}（ホスト） ✓</div>`;
+    }
+    statusEl.innerHTML = html;
   });
 }
+
+window.submitHostJiyuu = async () => {
+  const text = document.getElementById('jiyuu-host-answer').value.trim();
+  if (!text) { alert('回答を入力してください'); return; }
+  const hostName = window._hostName || 'ホスト';
+  await set(ref(db, `rooms/${roomId}/answers/${HOST_ANSWER_ID}`), {
+    playerName: `${hostName}（ホスト）`,
+    text,
+    answeredAt: Date.now()
+  });
+  document.getElementById('jiyuu-host-answer').disabled     = true;
+  document.getElementById('btn-host-jiyuu-submit').disabled = true;
+  document.getElementById('jiyuu-host-sent').style.display  = 'block';
+};
 
 window.closeJiyuu = async () => {
   document.getElementById('btn-close-jiyuu').disabled = true;
@@ -1157,6 +1190,11 @@ window.closeJiyuu = async () => {
     const ans = answers[id];
     return { id, name: p.name, text: ans ? ans.text : '（未回答）', revealed: false };
   });
+  // ホストが回答していれば追加
+  if (answers[HOST_ANSWER_ID] !== undefined) {
+    const hostName = window._hostName || 'ホスト';
+    revealBtns.push({ id: HOST_ANSWER_ID, name: `${hostName}（ホスト）`, text: answers[HOST_ANSWER_ID].text, revealed: false });
+  }
   window._jiyuuRevealData = revealBtns;
 
   document.getElementById('jiyuu-reveal-buttons').innerHTML = revealBtns.map(d => `

@@ -621,9 +621,14 @@ function handleRevealed(q) { if(q.answer) document.getElementById('hayaoshi-resu
 
 async function handleJiyuuClosed(q) {
   const pSnap=await get(ref(db,`rooms/${roomId}/players`)); const players=pSnap.val()||{};
+  const aSnap=await get(ref(db,`rooms/${roomId}/answers`)); const answers=aSnap.val()||{};
   document.getElementById('jiyuu-input-area').style.display='none'; document.getElementById('jiyuu-sent-msg').style.display='none';
   document.getElementById('jiyuu-hidden-list').style.display='block';
-  document.getElementById('jiyuu-hidden-items').innerHTML=Object.entries(players).map(([id,p])=>`<div class="answer-item" id="jplay-${id}"><div class="answer-item-name">${p.name}</div><div class="answer-item-text" style="color:var(--text-muted);letter-spacing:0.2em;">？？？</div></div>`).join('');
+  let html=Object.entries(players).map(([id,p])=>`<div class="answer-item" id="jplay-${id}"><div class="answer-item-name">${p.name}</div><div class="answer-item-text" style="color:var(--text-muted);letter-spacing:0.2em;">？？？</div></div>`).join('');
+  if (answers['HOST'] !== undefined) {
+    html += `<div class="answer-item" id="jplay-HOST"><div class="answer-item-name">${answers['HOST'].playerName || 'ホスト'}</div><div class="answer-item-text" style="color:var(--text-muted);letter-spacing:0.2em;">？？？</div></div>`;
+  }
+  document.getElementById('jiyuu-hidden-items').innerHTML=html;
 }
 
 function handleJiyuuPartialReveal(q) {
@@ -633,8 +638,13 @@ function handleJiyuuPartialReveal(q) {
 
 async function handleJiyuuAllRevealed(q) {
   const revealed=q.jiyuuRevealed||{}; const pSnap=await get(ref(db,`rooms/${roomId}/players`)); const players=pSnap.val()||{};
+  const aSnap=await get(ref(db,`rooms/${roomId}/answers`)); const answers=aSnap.val()||{};
   document.getElementById('jiyuu-hidden-list').style.display='none'; document.getElementById('jiyuu-revealed-list').style.display='block';
-  document.getElementById('jiyuu-revealed-items').innerHTML=Object.entries(players).map(([id,p])=>`<div class="answer-item" style="border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.04);"><div class="answer-item-name">${p.name}</div><div class="answer-item-text">${revealed[id]||'（未回答）'}</div></div>`).join('');
+  let html=Object.entries(players).map(([id,p])=>`<div class="answer-item" style="border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.04);"><div class="answer-item-name">${p.name}</div><div class="answer-item-text">${revealed[id]||'（未回答）'}</div></div>`).join('');
+  if (answers['HOST'] !== undefined) {
+    html += `<div class="answer-item" style="border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.04);"><div class="answer-item-name">${answers['HOST'].playerName || 'ホスト'}</div><div class="answer-item-text">${revealed['HOST']||'（未回答）'}</div></div>`;
+  }
+  document.getElementById('jiyuu-revealed-items').innerHTML=html;
 }
 
 function listenRoomStatus() {
