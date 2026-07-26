@@ -188,6 +188,70 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </div>
 </div>
 
+<!-- REBORNトップページ -->
+<div class="screen" id="screen-reborn-top">
+  <div style="text-align:center;padding:32px 0 24px;">
+    <div style="font-size:48px;margin-bottom:12px;">🔥</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(20px,4.5vw,30px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">家庭教師ヒットマンREBORN!</div>
+    <div style="background:rgba(255,170,0,0.08);border:1.5px solid rgba(255,170,0,0.3);border-radius:var(--radius);padding:16px 20px;margin:0 0 24px;text-align:left;line-height:1.8;font-size:14px;color:#ddd;">
+      ヴォンゴラファミリーの絆と炎、どこまで覚えているか挑戦してみよ！<br>
+      ダイイングウィルの覚悟で挑め！
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">問題数を選んでスタート</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-primary" onclick="startRebornQuiz(10)">🔥 10問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startRebornQuiz(30)" style="background:linear-gradient(135deg,#cc6600,#993300);">💪 30問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startRebornQuiz(50)" style="background:linear-gradient(135deg,#880000,#550000);">💀 50問チャレンジ</button>
+    </div>
+    <div id="reborn-q-count" style="font-size:12px;color:var(--text-muted);margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- REBORNクイズ画面 -->
+<div class="screen" id="screen-reborn-quiz">
+  <div class="status-bar">
+    <div class="status-dot active"></div>
+    <span id="reborn-progress-label">1 / 10</span>
+    <div style="flex:1;margin:0 10px;">
+      <div class="progress-bar"><div class="progress-fill" id="reborn-progress-fill" style="width:10%"></div></div>
+    </div>
+    <span style="font-size:11px;color:var(--gold2);font-weight:700;" id="reborn-score-label">0正解</span>
+  </div>
+  <div class="quiz-card" style="margin-bottom:16px;">
+    <div class="quiz-badge">家庭教師ヒットマンREBORN!</div>
+    <div id="reborn-media"></div>
+    <div class="quiz-question" id="reborn-question">問題文</div>
+  </div>
+  <div id="reborn-input-area">
+    <textarea class="kizyutsu-textarea" id="reborn-answer-input" placeholder="回答を入力..."></textarea>
+    <button class="btn btn-primary" onclick="submitRebornAnswer()" style="margin-top:8px;">✉️ 回答する</button>
+  </div>
+  <div id="reborn-result-area" style="display:none;">
+    <div id="reborn-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
+    <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">💡 正解</div>
+      <div style="font-size:18px;font-weight:900;color:var(--correct);" id="reborn-correct-display"></div>
+    </div>
+    <div id="reborn-explanation-area" style="display:none;background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--correct);margin-bottom:4px;">📖 解説</div>
+      <div style="font-size:13px;color:#ccc;" id="reborn-explanation-text"></div>
+    </div>
+    <button class="btn btn-gold" id="reborn-next-btn" onclick="nextRebornQuestion()">次の問題へ →</button>
+  </div>
+</div>
+
+<!-- REBORN結果画面 -->
+<div class="screen" id="screen-reborn-result">
+  <div style="text-align:center;padding:32px 0;">
+    <div style="font-size:56px;margin-bottom:16px;" id="reborn-result-emoji">🏆</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:28px;color:var(--gold);margin-bottom:8px;">結果発表</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:64px;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6);" id="reborn-result-rate">0%</div>
+    <div style="font-size:16px;color:#ddd;margin:8px 0 24px;" id="reborn-result-detail"></div>
+    <div style="background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;text-align:left;max-height:400px;overflow-y:auto;" id="reborn-result-list"></div>
+    <button class="btn btn-primary" onclick="backToRebornTop()">🔄 もう一度挑戦</button>
+  </div>
+</div>
+
 <!-- クイズ画面 -->
 <div class="screen" id="screen-quiz">
   <div class="status-bar">
@@ -370,6 +434,108 @@ function showNagaoResult() {
 
 function backToNagaoTop() { showNagaoTop(); }
 
+/* ── REBORN（NAGAOと同じ仕組み） ── */
+var _rebornQueue=[], _rebornIndex=0, _rebornScore=0, _rebornTotal=0, _rebornResults=[];
+
+function getRebornGenre() {
+  if (typeof DEFAULT_GENRES !== 'undefined') {
+    for (var i=0;i<DEFAULT_GENRES.length;i++) {
+      if (DEFAULT_GENRES[i].id === 'reborn') return DEFAULT_GENRES[i];
+    }
+  }
+  return null;
+}
+
+function showRebornTop() {
+  var g = getRebornGenre();
+  var el = document.getElementById('reborn-q-count');
+  if (el) el.textContent = g ? '現在の問題数：' + g.questions.length + '問' : '問題データ読み込み中...';
+  showScreen('screen-reborn-top');
+}
+
+function startRebornQuiz(num) {
+  var g = getRebornGenre();
+  if (!g || g.questions.length === 0) { alert('問題がまだ登録されていません'); return; }
+  var shuffled = g.questions.slice().sort(function(){ return Math.random()-0.5; });
+  _rebornQueue   = shuffled.slice(0, Math.min(num, shuffled.length));
+  _rebornIndex   = 0; _rebornScore = 0;
+  _rebornTotal   = _rebornQueue.length;
+  _rebornResults = [];
+  showRebornQuestion();
+}
+
+function showRebornQuestion() {
+  var q = _rebornQueue[_rebornIndex];
+  document.getElementById('reborn-progress-label').textContent = (_rebornIndex+1) + ' / ' + _rebornTotal;
+  document.getElementById('reborn-progress-fill').style.width  = ((_rebornIndex+1)/_rebornTotal*100) + '%';
+  document.getElementById('reborn-score-label').textContent    = _rebornScore + '正解';
+  document.getElementById('reborn-question').textContent       = q.text;
+  var md = document.getElementById('reborn-media');
+  if (q.media) {
+    md.innerHTML = '<img src="' + q.media + '" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">';
+  } else { md.innerHTML = ''; }
+  document.getElementById('reborn-answer-input').value    = '';
+  document.getElementById('reborn-answer-input').disabled = false;
+  document.getElementById('reborn-input-area').style.display  = 'block';
+  document.getElementById('reborn-result-area').style.display = 'none';
+  var nb = document.getElementById('reborn-next-btn');
+  if (nb) nb.textContent = _rebornIndex === _rebornTotal-1 ? '結果を見る 🏆' : '次の問題へ →';
+  showScreen('screen-reborn-quiz');
+}
+
+function submitRebornAnswer() {
+  var q      = _rebornQueue[_rebornIndex];
+  var input  = document.getElementById('reborn-answer-input').value.trim();
+  var main   = (q.answer || '').trim();
+  var all    = q.answers ? q.answers.split(',').map(function(a){return a.trim();}).filter(function(a){return a;}) : [main];
+  if (all.indexOf(main) === -1) all.unshift(main);
+  var isCorrect = all.indexOf(input) !== -1;
+  if (isCorrect) _rebornScore++;
+  _rebornResults.push({ q:q, input:input, isCorrect:isCorrect });
+  document.getElementById('reborn-answer-input').disabled = true;
+  document.getElementById('reborn-input-area').style.display  = 'none';
+  document.getElementById('reborn-result-area').style.display = 'block';
+  var judgeEl = document.getElementById('reborn-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);';
+  } else {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px;">あなたの回答：' + (input||'（未入力）') + '</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(255,51,85,0.05);border:1.5px solid rgba(255,51,85,0.3);';
+  }
+  document.getElementById('reborn-correct-display').textContent = main;
+  var expArea = document.getElementById('reborn-explanation-area');
+  if (q.explanation) {
+    document.getElementById('reborn-explanation-text').textContent = q.explanation;
+    expArea.style.display = 'block';
+  } else { expArea.style.display = 'none'; }
+}
+
+function nextRebornQuestion() {
+  _rebornIndex++;
+  if (_rebornIndex >= _rebornTotal) showRebornResult();
+  else showRebornQuestion();
+}
+
+function showRebornResult() {
+  var rate  = Math.round(_rebornScore/_rebornTotal*100);
+  var emoji = rate>=90?'🏆':rate>=70?'🎉':rate>=50?'👍':rate>=30?'😅':'😢';
+  document.getElementById('reborn-result-emoji').textContent  = emoji;
+  document.getElementById('reborn-result-rate').textContent   = rate + '%';
+  document.getElementById('reborn-result-detail').textContent = _rebornTotal + '問中 ' + _rebornScore + '問正解';
+  document.getElementById('reborn-result-list').innerHTML = _rebornResults.map(function(r){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
+      + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.q.text + '</div>'
+      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + r.q.answer + '</div>' : '')
+      + '</div></div>';
+  }).join('');
+  showScreen('screen-reborn-result');
+}
+
+function backToRebornTop() { showRebornTop(); }
+
 // 最新版に更新（キャッシュ回避のURLパラメータを付けて再読み込み。履歴やCookie等には影響しない）
 function forceRefresh() {
   const url = new URL(location.href);
@@ -461,6 +627,7 @@ window.joinRoom = async () => {
   const inputName   = document.getElementById('input-name').value.trim();
   if (!inputRoomId || !inputName) { alert('ルームIDと名前を入力してください'); return; }
   if (inputRoomId === 'NAGAO') { showNagaoTop(); return; }
+  if (inputRoomId === 'REBORN') { showRebornTop(); return; }
   const roomSnap = await get(ref(db, `rooms/${inputRoomId}`));
   if (!roomSnap.exists()) { alert('ルームが見つかりません。ルームIDを確認してください。'); return; }
   roomId=inputRoomId; playerName=inputName;
