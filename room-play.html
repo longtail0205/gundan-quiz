@@ -180,6 +180,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div style="font-size:13px;color:#ccc;" id="nagao-explanation-text"></div>
     </div>
     <button class="btn btn-gold" id="nagao-next-btn" onclick="nextNagaoQuestion()">次の問題へ →</button>
+    <button class="btn" style="width:100%;margin-top:10px;background:rgba(255,51,85,0.15);border:1.5px solid rgba(255,51,85,0.4);color:#ff8899;border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;" onclick="endGenreQuizNow('nagao')">🛑 ここまでで終了する</button>
   </div>
 </div>
 
@@ -245,6 +246,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div style="font-size:13px;color:#ccc;" id="reborn-explanation-text"></div>
     </div>
     <button class="btn btn-gold" id="reborn-next-btn" onclick="nextRebornQuestion()">次の問題へ →</button>
+    <button class="btn" style="width:100%;margin-top:10px;background:rgba(255,51,85,0.15);border:1.5px solid rgba(255,51,85,0.4);color:#ff8899;border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;" onclick="endGenreQuizNow('reborn')">🛑 ここまでで終了する</button>
   </div>
 </div>
 
@@ -264,6 +266,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="screen" id="screen-genre-question-list">
   <button class="back-btn" onclick="backFromGenreList()">← もどる</button>
   <div class="page-title" id="genre-list-title">問題一覧</div>
+  <button class="btn" style="display:block;width:100%;margin-bottom:12px;background:linear-gradient(135deg,rgba(170,100,255,0.2),rgba(120,50,255,0.15));border:1.5px solid rgba(170,100,255,0.5);border-radius:50px;padding:12px;color:#cc88ff;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.05em;" onclick="startGenreRandomFromList()">🎲 このジャンルをランダム出題</button>
   <div id="genre-list-content"></div>
 </div>
 
@@ -432,11 +435,12 @@ function nextNagaoQuestion() {
 }
 
 function showNagaoResult() {
-  var rate  = Math.round(_nagaoScore/_nagaoTotal*100);
+  var answeredCount = _nagaoResults.length;
+  var rate  = answeredCount > 0 ? Math.round(_nagaoScore/answeredCount*100) : 0;
   var emoji = rate>=90?'🏆':rate>=70?'🎉':rate>=50?'👍':rate>=30?'😅':'😢';
   document.getElementById('nagao-result-emoji').textContent  = emoji;
   document.getElementById('nagao-result-rate').textContent   = rate + '%';
-  document.getElementById('nagao-result-detail').textContent = _nagaoTotal + '問中 ' + _nagaoScore + '問正解';
+  document.getElementById('nagao-result-detail').textContent = answeredCount + '問中 ' + _nagaoScore + '問正解';
   document.getElementById('nagao-result-list').innerHTML = _nagaoResults.map(function(r){
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
       + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
@@ -535,11 +539,12 @@ function nextRebornQuestion() {
 }
 
 function showRebornResult() {
-  var rate  = Math.round(_rebornScore/_rebornTotal*100);
+  var answeredCount = _rebornResults.length;
+  var rate  = answeredCount > 0 ? Math.round(_rebornScore/answeredCount*100) : 0;
   var emoji = rate>=90?'🏆':rate>=70?'🎉':rate>=50?'👍':rate>=30?'😅':'😢';
   document.getElementById('reborn-result-emoji').textContent  = emoji;
   document.getElementById('reborn-result-rate').textContent   = rate + '%';
-  document.getElementById('reborn-result-detail').textContent = _rebornTotal + '問中 ' + _rebornScore + '問正解';
+  document.getElementById('reborn-result-detail').textContent = answeredCount + '問中 ' + _rebornScore + '問正解';
   document.getElementById('reborn-result-list').innerHTML = _rebornResults.map(function(r){
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
       + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
@@ -604,6 +609,18 @@ function backFromGenreList() {
 function startGenreQuizSequential(genreId, index) {
   if (genreId === 'nagao') startNagaoQuizSequential(index);
   else if (genreId === 'reborn') startRebornQuizSequential(index);
+}
+
+/* ── 問題一覧のランダム出題ボタン（全問シャッフルして最初から） ── */
+function startGenreRandomFromList() {
+  if (_genreListFrom === 'nagao') startNagaoQuiz(getNagaoGenre().questions.length);
+  else if (_genreListFrom === 'reborn') startRebornQuiz(getRebornGenre().questions.length);
+}
+
+/* ── 途中で終了して、今までの回答内容で結果画面を表示 ── */
+function endGenreQuizNow(genreId) {
+  if (genreId === 'nagao') showNagaoResult();
+  else if (genreId === 'reborn') showRebornResult();
 }
 
 function startNagaoQuizSequential(startIndex) {
