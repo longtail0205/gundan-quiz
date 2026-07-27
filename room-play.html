@@ -15,6 +15,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .screen.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 .page-title{font-family:'Dela Gothic One',sans-serif;font-size:20px;color:var(--gold);margin-bottom:20px;letter-spacing:0.05em;}
+.back-btn{background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,215,0,0.3);border-radius:50px;padding:8px 18px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--gold2);margin-bottom:16px;display:inline-block;}
+.back-btn:hover{background:rgba(255,215,0,0.1);}
+.q-list-item{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.12);border-radius:var(--radius);padding:12px 16px;margin-bottom:8px;}
+.q-list-num{background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#1a0800;font-weight:900;font-size:11px;min-width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;}
+.q-list-text{font-size:13px;color:#ddd;font-weight:700;}
+.q-list-answer{font-size:12px;color:var(--correct);margin-top:6px;margin-left:32px;}
 .card{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
 .btn{display:block;width:100%;padding:16px;border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.15s;border:none;letter-spacing:0.05em;text-align:center;}
 .btn-primary{background:linear-gradient(135deg,#ff2244,#cc0033);color:#fff;box-shadow:0 4px 0 #660011,0 0 20px rgba(255,34,68,0.4);}
@@ -126,7 +132,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <!-- NAGAOトップページ -->
 <div class="screen" id="screen-nagao-top">
   <div style="text-align:center;padding:32px 0 24px;">
-    <div style="font-size:48px;margin-bottom:12px;">👑</div>
+    <div style="font-size:48px;margin-bottom:12px;cursor:pointer;user-select:none;" onclick="genreIconClick('nagao')">👑</div>
     <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(22px,5vw,34px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">軍団長からの挑戦状</div>
     <div style="background:rgba(255,34,68,0.08);border:1.5px solid rgba(255,34,68,0.3);border-radius:var(--radius);padding:16px 20px;margin:0 0 24px;text-align:left;line-height:1.8;font-size:14px;color:#ddd;">
       軍団長・長尾が知っている物について、どれだけ答えられるか挑戦してみよ！<br>
@@ -140,6 +146,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <button class="btn btn-primary" onclick="startNagaoQuiz(50)" style="background:linear-gradient(135deg,#880000,#550000);">💀 50問チャレンジ</button>
     </div>
     <div id="nagao-q-count" style="font-size:12px;color:var(--text-muted);margin-top:12px;"></div>
+    <button class="btn btn-gold" id="nagao-list-btn" style="display:none;margin-top:16px;" onclick="showGenreQuestionList('nagao')">📋 問題一覧を見る</button>
   </div>
 </div>
 
@@ -191,7 +198,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <!-- REBORNトップページ -->
 <div class="screen" id="screen-reborn-top">
   <div style="text-align:center;padding:32px 0 24px;">
-    <div style="font-size:48px;margin-bottom:12px;">🔥</div>
+    <div style="font-size:48px;margin-bottom:12px;cursor:pointer;user-select:none;" onclick="genreIconClick('reborn')">🔥</div>
     <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(20px,4.5vw,30px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">家庭教師ヒットマンREBORN!</div>
     <div style="background:rgba(255,170,0,0.08);border:1.5px solid rgba(255,170,0,0.3);border-radius:var(--radius);padding:16px 20px;margin:0 0 24px;text-align:left;line-height:1.8;font-size:14px;color:#ddd;">
       家庭教師ヒットマンREBORN!をどこまで覚えているか挑戦してみよ！<br>
@@ -204,6 +211,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <button class="btn btn-primary" onclick="startRebornQuiz(50)" style="background:linear-gradient(135deg,#880000,#550000);">💀 50問チャレンジ</button>
     </div>
     <div id="reborn-q-count" style="font-size:12px;color:var(--text-muted);margin-top:12px;"></div>
+    <button class="btn btn-gold" id="reborn-list-btn" style="display:none;margin-top:16px;" onclick="showGenreQuestionList('reborn')">📋 問題一覧を見る</button>
   </div>
 </div>
 
@@ -250,6 +258,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div style="background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;text-align:left;max-height:400px;overflow-y:auto;" id="reborn-result-list"></div>
     <button class="btn btn-primary" onclick="backToRebornTop()">🔄 もう一度挑戦</button>
   </div>
+</div>
+
+<!-- 問題一覧画面（NAGAO/REBORN共通） -->
+<div class="screen" id="screen-genre-question-list">
+  <button class="back-btn" onclick="backFromGenreList()">← もどる</button>
+  <div class="page-title" id="genre-list-title">問題一覧</div>
+  <div id="genre-list-content"></div>
 </div>
 
 <!-- クイズ画面 -->
@@ -348,6 +363,7 @@ function showNagaoTop() {
   var g = getNagaoGenre();
   var el = document.getElementById('nagao-q-count');
   if (el) el.textContent = g ? '現在の問題数：' + g.questions.length + '問' : '問題データ読み込み中...';
+  resetGenreListButton('nagao');
   showScreen('screen-nagao-top');
 }
 
@@ -450,6 +466,7 @@ function showRebornTop() {
   var g = getRebornGenre();
   var el = document.getElementById('reborn-q-count');
   if (el) el.textContent = g ? '現在の問題数：' + g.questions.length + '問' : '問題データ読み込み中...';
+  resetGenreListButton('reborn');
   showScreen('screen-reborn-top');
 }
 
@@ -535,6 +552,54 @@ function showRebornResult() {
 }
 
 function backToRebornTop() { showRebornTop(); }
+
+/* ── アイコン2回タッチで問題一覧ボタンを表示（次回は非表示に戻る） ── */
+var _genreIconClickCount = {};
+var _genreListBtnShown   = {}; // このセッション中に一度でも出したかを記録（トップを開き直したら再度リセット）
+
+function genreIconClick(genreId) {
+  _genreIconClickCount[genreId] = (_genreIconClickCount[genreId] || 0) + 1;
+  if (_genreIconClickCount[genreId] >= 2) {
+    _genreIconClickCount[genreId] = 0;
+    const btn = document.getElementById(genreId + '-list-btn');
+    if (btn) btn.style.display = 'block';
+    _genreListBtnShown[genreId] = true;
+  }
+}
+
+// トップ画面を表示するたびにボタンを非表示にリセットする
+function resetGenreListButton(genreId) {
+  _genreIconClickCount[genreId] = 0;
+  const btn = document.getElementById(genreId + '-list-btn');
+  if (btn) btn.style.display = 'none';
+}
+
+/* ── 問題一覧画面 ── */
+var _genreListFrom = null; // どのジャンルのトップに戻るか
+
+function showGenreQuestionList(genreId) {
+  const g = (typeof DEFAULT_GENRES !== 'undefined') ? DEFAULT_GENRES.find(gg => gg.id === genreId) : null;
+  if (!g) { alert('問題データが見つかりませんでした'); return; }
+
+  _genreListFrom = genreId;
+  document.getElementById('genre-list-title').textContent = g.name + '（全' + g.questions.length + '問）';
+
+  document.getElementById('genre-list-content').innerHTML = g.questions.map((q, i) => {
+    const answerLine = q.answer ? `<div class="q-list-answer">正解：${q.answer}</div>` : '';
+    return `<div class="q-list-item">
+      <span class="q-list-num">${i + 1}</span><span class="q-list-text">${q.text}</span>
+      ${answerLine}
+    </div>`;
+  }).join('');
+
+  showScreen('screen-genre-question-list');
+}
+
+function backFromGenreList() {
+  if (_genreListFrom === 'nagao') { showNagaoTop(); resetGenreListButton('nagao'); }
+  else if (_genreListFrom === 'reborn') { showRebornTop(); resetGenreListButton('reborn'); }
+  else { showScreen('screen-join'); }
+}
 
 // 最新版に更新（キャッシュ回避のURLパラメータを付けて再読み込み。履歴やCookie等には影響しない）
 function forceRefresh() {
