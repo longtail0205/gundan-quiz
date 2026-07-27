@@ -17,10 +17,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .page-title{font-family:'Dela Gothic One',sans-serif;font-size:20px;color:var(--gold);margin-bottom:20px;letter-spacing:0.05em;}
 .back-btn{background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,215,0,0.3);border-radius:50px;padding:8px 18px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--gold2);margin-bottom:16px;display:inline-block;}
 .back-btn:hover{background:rgba(255,215,0,0.1);}
-.q-list-item{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.12);border-radius:var(--radius);padding:12px 16px;margin-bottom:8px;}
-.q-list-num{background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#1a0800;font-weight:900;font-size:11px;min-width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;}
-.q-list-text{font-size:13px;color:#ddd;font-weight:700;}
-.q-list-answer{font-size:12px;color:var(--correct);margin-top:6px;margin-left:32px;}
+.q-select-item{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.12);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
+.q-select-item:hover{border-color:rgba(255,215,0,0.5);background:var(--bg-card2);}
+.q-select-num{background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#1a0800;font-weight:900;font-size:11px;min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.q-select-text{flex:1;font-size:13px;color:#ddd;font-weight:700;}
 .card{background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
 .btn{display:block;width:100%;padding:16px;border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.15s;border:none;letter-spacing:0.05em;text-align:center;}
 .btn-primary{background:linear-gradient(135deg,#ff2244,#cc0033);color:#fff;box-shadow:0 4px 0 #660011,0 0 20px rgba(255,34,68,0.4);}
@@ -585,10 +585,9 @@ function showGenreQuestionList(genreId) {
   document.getElementById('genre-list-title').textContent = g.name + '（全' + g.questions.length + '問）';
 
   document.getElementById('genre-list-content').innerHTML = g.questions.map((q, i) => {
-    const answerLine = q.answer ? `<div class="q-list-answer">正解：${q.answer}</div>` : '';
-    return `<div class="q-list-item">
-      <span class="q-list-num">${i + 1}</span><span class="q-list-text">${q.text}</span>
-      ${answerLine}
+    return `<div class="q-select-item" onclick="startGenreQuizSequential('${genreId}', ${i})">
+      <div class="q-select-num">${i + 1}</div>
+      <div class="q-select-text">${q.title || q.text}</div>
     </div>`;
   }).join('');
 
@@ -599,6 +598,34 @@ function backFromGenreList() {
   if (_genreListFrom === 'nagao') { showNagaoTop(); resetGenreListButton('nagao'); }
   else if (_genreListFrom === 'reborn') { showRebornTop(); resetGenreListButton('reborn'); }
   else { showScreen('screen-join'); }
+}
+
+/* ── 問題一覧からタップした問題を起点に、順番通り出題していく ── */
+function startGenreQuizSequential(genreId, index) {
+  if (genreId === 'nagao') startNagaoQuizSequential(index);
+  else if (genreId === 'reborn') startRebornQuizSequential(index);
+}
+
+function startNagaoQuizSequential(startIndex) {
+  const g = getNagaoGenre();
+  if (!g || g.questions.length === 0) { alert('問題がまだ登録されていません'); return; }
+  _nagaoQueue   = g.questions;       // シャッフルせず元の並び順のまま
+  _nagaoIndex   = startIndex;        // タップした問題から開始
+  _nagaoScore   = 0;
+  _nagaoTotal   = g.questions.length;
+  _nagaoResults = [];
+  showNagaoQuestion();
+}
+
+function startRebornQuizSequential(startIndex) {
+  const g = getRebornGenre();
+  if (!g || g.questions.length === 0) { alert('問題がまだ登録されていません'); return; }
+  _rebornQueue   = g.questions;
+  _rebornIndex   = startIndex;
+  _rebornScore   = 0;
+  _rebornTotal   = g.questions.length;
+  _rebornResults = [];
+  showRebornQuestion();
 }
 
 // 最新版に更新（キャッシュ回避のURLパラメータを付けて再読み込み。履歴やCookie等には影響しない）
