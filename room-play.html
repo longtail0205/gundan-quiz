@@ -131,6 +131,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- NAGAOトップページ -->
 <div class="screen" id="screen-nagao-top">
+  <button class="back-btn" onclick="showScreen('screen-join')">← もどる</button>
   <div style="text-align:center;padding:32px 0 24px;">
     <div style="font-size:48px;margin-bottom:12px;cursor:pointer;user-select:none;" onclick="genreIconClick('nagao')">👑</div>
     <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(22px,5vw,34px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">軍団長からの挑戦状</div>
@@ -198,6 +199,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <!-- REBORNトップページ -->
 <div class="screen" id="screen-reborn-top">
+  <button class="back-btn" onclick="showScreen('screen-join')">← もどる</button>
   <div style="text-align:center;padding:32px 0 24px;">
     <div style="font-size:48px;margin-bottom:12px;cursor:pointer;user-select:none;" onclick="genreIconClick('reborn')">🔥</div>
     <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(20px,4.5vw,30px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">家庭教師ヒットマンREBORN!</div>
@@ -259,6 +261,148 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div style="font-size:16px;color:#ddd;margin:8px 0 24px;" id="reborn-result-detail"></div>
     <div style="background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;text-align:left;max-height:400px;overflow-y:auto;" id="reborn-result-list"></div>
     <button class="btn btn-primary" onclick="backToRebornTop()">🔄 もう一度挑戦</button>
+  </div>
+</div>
+
+<!-- PACHIトップページ -->
+<div class="screen" id="screen-pachi-top">
+  <button class="back-btn" onclick="showScreen('screen-join')">← もどる</button>
+  <div style="text-align:center;padding:32px 0 24px;">
+    <div style="font-size:48px;margin-bottom:12px;cursor:pointer;user-select:none;" onclick="genreIconClick('pachi')">🎰</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(20px,4.5vw,30px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">パチンコ関連クイズ</div>
+    <div style="background:rgba(255,170,0,0.08);border:1.5px solid rgba(255,170,0,0.3);border-radius:var(--radius);padding:16px 20px;margin:0 0 24px;text-align:left;line-height:1.8;font-size:14px;color:#ddd;">
+      パチンコに関する問題を集めた！パチンカーならわかって当然！<br>8割以上解けないやつは・・・流石にいないか
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">問題数を選んでスタート</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-primary" onclick="startPachiQuiz(10)">🔥 10問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startPachiQuiz(30)" style="background:linear-gradient(135deg,#cc6600,#993300);">💪 30問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startPachiQuiz(50)" style="background:linear-gradient(135deg,#880000,#550000);">💀 50問チャレンジ</button>
+    </div>
+    <div id="pachi-q-count" style="font-size:12px;color:var(--text-muted);margin-top:12px;"></div>
+    <button class="btn btn-gold" id="pachi-list-btn" style="display:none;margin-top:16px;" onclick="showGenreQuestionList('pachi')">📋 問題一覧を見る</button>
+  </div>
+</div>
+
+<!-- PACHIクイズ画面 -->
+<div class="screen" id="screen-pachi-quiz">
+  <div class="status-bar">
+    <div class="status-dot active"></div>
+    <span id="pachi-progress-label">1 / 10</span>
+    <div style="flex:1;margin:0 10px;">
+      <div class="progress-bar"><div class="progress-fill" id="pachi-progress-fill" style="width:10%"></div></div>
+    </div>
+    <span style="font-size:11px;color:var(--gold2);font-weight:700;" id="pachi-score-label">0正解</span>
+  </div>
+  <div class="quiz-card" style="margin-bottom:16px;">
+    <div class="quiz-badge">パチンコ関連クイズ</div>
+    <div id="pachi-media"></div>
+    <div class="quiz-question" id="pachi-question">問題文</div>
+  </div>
+  <div id="pachi-input-area">
+    <textarea class="kizyutsu-textarea" id="pachi-answer-input" placeholder="回答を入力..."></textarea>
+    <button class="btn btn-primary" onclick="submitPachiAnswer()" style="margin-top:8px;">✉️ 回答する</button>
+  </div>
+  <div id="pachi-result-area" style="display:none;">
+    <div id="pachi-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
+    <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">💡 正解</div>
+      <div style="font-size:18px;font-weight:900;color:var(--correct);" id="pachi-correct-display"></div>
+    </div>
+    <div id="pachi-explanation-area" style="display:none;background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--correct);margin-bottom:4px;">📖 解説</div>
+      <div style="font-size:13px;color:#ccc;" id="pachi-explanation-text"></div>
+    </div>
+    <button class="btn btn-gold" id="pachi-next-btn" onclick="nextPachiQuestion()">次の問題へ →</button>
+    <button class="btn" style="width:100%;margin-top:10px;background:rgba(255,51,85,0.15);border:1.5px solid rgba(255,51,85,0.4);color:#ff8899;border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;" onclick="endGenreQuizNow('pachi')">🛑 ここまでで終了する</button>
+  </div>
+</div>
+
+<!-- PACHI結果画面 -->
+<div class="screen" id="screen-pachi-result">
+  <div style="text-align:center;padding:32px 0;">
+    <div style="font-size:56px;margin-bottom:16px;" id="pachi-result-emoji">🏆</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:28px;color:var(--gold);margin-bottom:8px;">結果発表</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:64px;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6);" id="pachi-result-rate">0%</div>
+    <div style="font-size:16px;color:#ddd;margin:8px 0 24px;" id="pachi-result-detail"></div>
+    <div style="background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;text-align:left;max-height:400px;overflow-y:auto;" id="pachi-result-list"></div>
+    <button class="btn btn-primary" onclick="backToPachiTop()">🔄 もう一度挑戦</button>
+  </div>
+</div>
+
+<!-- 準備中画面（問題が0件のジャンル用） -->
+<div class="screen" id="screen-genre-preparing">
+  <button class="back-btn" onclick="backFromPreparing()">← もどる</button>
+  <div style="text-align:center;padding:60px 0;">
+    <div style="font-size:56px;margin-bottom:16px;">🚧</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:22px;color:var(--gold);margin-bottom:12px;">準備中</div>
+    <div style="font-size:14px;color:var(--text-muted);" id="genre-preparing-text">この問題はまだ準備中です。<br>もうしばらくお待ちください。</div>
+  </div>
+</div>
+
+<!-- SLOTトップページ -->
+<div class="screen" id="screen-slot-top">
+  <button class="back-btn" onclick="showScreen('screen-join')">← もどる</button>
+  <div style="text-align:center;padding:32px 0 24px;">
+    <div style="font-size:48px;margin-bottom:12px;cursor:pointer;user-select:none;" onclick="genreIconClick('slot')">🎰</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:clamp(20px,4.5vw,30px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6),3px 3px 0 #7a4400;margin-bottom:12px;">スロット関連クイズ</div>
+    <div style="background:rgba(255,170,0,0.08);border:1.5px solid rgba(255,170,0,0.3);border-radius:var(--radius);padding:16px 20px;margin:0 0 24px;text-align:left;line-height:1.8;font-size:14px;color:#ddd;">
+      スロットの豆知識、どこまで知っているか挑戦してみよ！
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">問題数を選んでスタート</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-primary" onclick="startSlotQuiz(10)">🔥 10問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startSlotQuiz(30)" style="background:linear-gradient(135deg,#cc6600,#993300);">💪 30問チャレンジ</button>
+      <button class="btn btn-primary" onclick="startSlotQuiz(50)" style="background:linear-gradient(135deg,#880000,#550000);">💀 50問チャレンジ</button>
+    </div>
+    <div id="slot-q-count" style="font-size:12px;color:var(--text-muted);margin-top:12px;"></div>
+    <button class="btn btn-gold" id="slot-list-btn" style="display:none;margin-top:16px;" onclick="showGenreQuestionList('slot')">📋 問題一覧を見る</button>
+  </div>
+</div>
+
+<!-- SLOTクイズ画面 -->
+<div class="screen" id="screen-slot-quiz">
+  <div class="status-bar">
+    <div class="status-dot active"></div>
+    <span id="slot-progress-label">1 / 10</span>
+    <div style="flex:1;margin:0 10px;">
+      <div class="progress-bar"><div class="progress-fill" id="slot-progress-fill" style="width:10%"></div></div>
+    </div>
+    <span style="font-size:11px;color:var(--gold2);font-weight:700;" id="slot-score-label">0正解</span>
+  </div>
+  <div class="quiz-card" style="margin-bottom:16px;">
+    <div class="quiz-badge">スロット関連クイズ</div>
+    <div id="slot-media"></div>
+    <div class="quiz-question" id="slot-question">問題文</div>
+  </div>
+  <div id="slot-input-area">
+    <textarea class="kizyutsu-textarea" id="slot-answer-input" placeholder="回答を入力..."></textarea>
+    <button class="btn btn-primary" onclick="submitSlotAnswer()" style="margin-top:8px;">✉️ 回答する</button>
+  </div>
+  <div id="slot-result-area" style="display:none;">
+    <div id="slot-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
+    <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">💡 正解</div>
+      <div style="font-size:18px;font-weight:900;color:var(--correct);" id="slot-correct-display"></div>
+    </div>
+    <div id="slot-explanation-area" style="display:none;background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--correct);margin-bottom:4px;">📖 解説</div>
+      <div style="font-size:13px;color:#ccc;" id="slot-explanation-text"></div>
+    </div>
+    <button class="btn btn-gold" id="slot-next-btn" onclick="nextSlotQuestion()">次の問題へ →</button>
+    <button class="btn" style="width:100%;margin-top:10px;background:rgba(255,51,85,0.15);border:1.5px solid rgba(255,51,85,0.4);color:#ff8899;border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;" onclick="endGenreQuizNow('slot')">🛑 ここまでで終了する</button>
+  </div>
+</div>
+
+<!-- SLOT結果画面 -->
+<div class="screen" id="screen-slot-result">
+  <div style="text-align:center;padding:32px 0;">
+    <div style="font-size:56px;margin-bottom:16px;" id="slot-result-emoji">🏆</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:28px;color:var(--gold);margin-bottom:8px;">結果発表</div>
+    <div style="font-family:'Dela Gothic One',sans-serif;font-size:64px;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6);" id="slot-result-rate">0%</div>
+    <div style="font-size:16px;color:#ddd;margin:8px 0 24px;" id="slot-result-detail"></div>
+    <div style="background:var(--bg-card);border:1.5px solid rgba(255,215,0,0.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;text-align:left;max-height:400px;overflow-y:auto;" id="slot-result-list"></div>
+    <button class="btn btn-primary" onclick="backToSlotTop()">🔄 もう一度挑戦</button>
   </div>
 </div>
 
@@ -558,6 +702,231 @@ function showRebornResult() {
 
 function backToRebornTop() { showRebornTop(); }
 
+/* ── PACHI（NAGAO/REBORNと同じ仕組み） ── */
+var _pachiQueue=[], _pachiIndex=0, _pachiScore=0, _pachiTotal=0, _pachiResults=[];
+
+function getPachiGenre() {
+  if (typeof DEFAULT_GENRES !== 'undefined') {
+    for (var i=0;i<DEFAULT_GENRES.length;i++) {
+      if (DEFAULT_GENRES[i].id === 'pachi') return DEFAULT_GENRES[i];
+    }
+  }
+  return null;
+}
+
+function showPachiTop() {
+  var g = getPachiGenre();
+  var el = document.getElementById('pachi-q-count');
+  if (el) el.textContent = g ? '現在の問題数：' + g.questions.length + '問' : '問題データ読み込み中...';
+  resetGenreListButton('pachi');
+  showScreen('screen-pachi-top');
+}
+
+function startPachiQuiz(num) {
+  var g = getPachiGenre();
+  if (!g || g.questions.length === 0) { alert('問題がまだ登録されていません'); return; }
+  var shuffled = g.questions.slice().sort(function(){ return Math.random()-0.5; });
+  _pachiQueue   = shuffled.slice(0, Math.min(num, shuffled.length));
+  _pachiIndex   = 0; _pachiScore = 0;
+  _pachiTotal   = _pachiQueue.length;
+  _pachiResults = [];
+  showPachiQuestion();
+}
+
+function showPachiQuestion() {
+  var q = _pachiQueue[_pachiIndex];
+  document.getElementById('pachi-progress-label').textContent = (_pachiIndex+1) + ' / ' + _pachiTotal;
+  document.getElementById('pachi-progress-fill').style.width  = ((_pachiIndex+1)/_pachiTotal*100) + '%';
+  document.getElementById('pachi-score-label').textContent    = _pachiScore + '正解';
+  document.getElementById('pachi-question').textContent       = q.text;
+  var md = document.getElementById('pachi-media');
+  if (q.media) {
+    md.innerHTML = '<img src="' + q.media + '" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">';
+  } else { md.innerHTML = ''; }
+  document.getElementById('pachi-answer-input').value    = '';
+  document.getElementById('pachi-answer-input').disabled = false;
+  document.getElementById('pachi-input-area').style.display  = 'block';
+  document.getElementById('pachi-result-area').style.display = 'none';
+  var nb = document.getElementById('pachi-next-btn');
+  if (nb) nb.textContent = _pachiIndex === _pachiTotal-1 ? '結果を見る 🏆' : '次の問題へ →';
+  showScreen('screen-pachi-quiz');
+}
+
+function submitPachiAnswer() {
+  var q      = _pachiQueue[_pachiIndex];
+  var input  = document.getElementById('pachi-answer-input').value.trim();
+  var main   = (q.answer || '').trim();
+  var all    = q.answers ? q.answers.split(',').map(function(a){return a.trim();}).filter(function(a){return a;}) : [main];
+  if (all.indexOf(main) === -1) all.unshift(main);
+  var isCorrect = all.indexOf(input) !== -1;
+  if (isCorrect) _pachiScore++;
+  _pachiResults.push({ q:q, input:input, isCorrect:isCorrect });
+  document.getElementById('pachi-answer-input').disabled = true;
+  document.getElementById('pachi-input-area').style.display  = 'none';
+  document.getElementById('pachi-result-area').style.display = 'block';
+  var judgeEl = document.getElementById('pachi-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);';
+  } else {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px;">あなたの回答：' + (input||'（未入力）') + '</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(255,51,85,0.05);border:1.5px solid rgba(255,51,85,0.3);';
+  }
+  document.getElementById('pachi-correct-display').textContent = main;
+  var expArea = document.getElementById('pachi-explanation-area');
+  if (q.explanation) {
+    document.getElementById('pachi-explanation-text').textContent = q.explanation;
+    expArea.style.display = 'block';
+  } else { expArea.style.display = 'none'; }
+}
+
+function nextPachiQuestion() {
+  _pachiIndex++;
+  if (_pachiIndex >= _pachiTotal) showPachiResult();
+  else showPachiQuestion();
+}
+
+function showPachiResult() {
+  var answeredCount = _pachiResults.length;
+  var rate  = answeredCount > 0 ? Math.round(_pachiScore/answeredCount*100) : 0;
+  var emoji = rate>=90?'🏆':rate>=70?'🎉':rate>=50?'👍':rate>=30?'😅':'😢';
+  document.getElementById('pachi-result-emoji').textContent  = emoji;
+  document.getElementById('pachi-result-rate').textContent   = rate + '%';
+  document.getElementById('pachi-result-detail').textContent = answeredCount + '問中 ' + _pachiScore + '問正解';
+  document.getElementById('pachi-result-list').innerHTML = _pachiResults.map(function(r){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
+      + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.q.text + '</div>'
+      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + r.q.answer + '</div>' : '')
+      + '</div></div>';
+  }).join('');
+  showScreen('screen-pachi-result');
+}
+
+function backToPachiTop() { showPachiTop(); }
+
+/* ── SLOT（PACHIと同じ仕組み・問題0件なら準備中を表示） ── */
+var _slotQueue=[], _slotIndex=0, _slotScore=0, _slotTotal=0, _slotResults=[];
+var _preparingFrom = null;
+
+function getSlotGenre() {
+  if (typeof DEFAULT_GENRES !== 'undefined') {
+    for (var i=0;i<DEFAULT_GENRES.length;i++) {
+      if (DEFAULT_GENRES[i].id === 'slot') return DEFAULT_GENRES[i];
+    }
+  }
+  return null;
+}
+
+function showSlotTop() {
+  var g = getSlotGenre();
+  if (!g || g.questions.length === 0) {
+    showPreparing('slot', 'スロットの問題はまだ準備中です。<br>もうしばらくお待ちください。');
+    return;
+  }
+  var el = document.getElementById('slot-q-count');
+  if (el) el.textContent = '現在の問題数：' + g.questions.length + '問';
+  resetGenreListButton('slot');
+  showScreen('screen-slot-top');
+}
+
+function startSlotQuiz(num) {
+  var g = getSlotGenre();
+  if (!g || g.questions.length === 0) { showPreparing('slot', 'スロットの問題はまだ準備中です。<br>もうしばらくお待ちください。'); return; }
+  var shuffled = g.questions.slice().sort(function(){ return Math.random()-0.5; });
+  _slotQueue   = shuffled.slice(0, Math.min(num, shuffled.length));
+  _slotIndex   = 0; _slotScore = 0;
+  _slotTotal   = _slotQueue.length;
+  _slotResults = [];
+  showSlotQuestion();
+}
+
+function showSlotQuestion() {
+  var q = _slotQueue[_slotIndex];
+  document.getElementById('slot-progress-label').textContent = (_slotIndex+1) + ' / ' + _slotTotal;
+  document.getElementById('slot-progress-fill').style.width  = ((_slotIndex+1)/_slotTotal*100) + '%';
+  document.getElementById('slot-score-label').textContent    = _slotScore + '正解';
+  document.getElementById('slot-question').textContent       = q.text;
+  var md = document.getElementById('slot-media');
+  if (q.media) {
+    md.innerHTML = '<img src="' + q.media + '" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">';
+  } else { md.innerHTML = ''; }
+  document.getElementById('slot-answer-input').value    = '';
+  document.getElementById('slot-answer-input').disabled = false;
+  document.getElementById('slot-input-area').style.display  = 'block';
+  document.getElementById('slot-result-area').style.display = 'none';
+  var nb = document.getElementById('slot-next-btn');
+  if (nb) nb.textContent = _slotIndex === _slotTotal-1 ? '結果を見る 🏆' : '次の問題へ →';
+  showScreen('screen-slot-quiz');
+}
+
+function submitSlotAnswer() {
+  var q      = _slotQueue[_slotIndex];
+  var input  = document.getElementById('slot-answer-input').value.trim();
+  var main   = (q.answer || '').trim();
+  var all    = q.answers ? q.answers.split(',').map(function(a){return a.trim();}).filter(function(a){return a;}) : [main];
+  if (all.indexOf(main) === -1) all.unshift(main);
+  var isCorrect = all.indexOf(input) !== -1;
+  if (isCorrect) _slotScore++;
+  _slotResults.push({ q:q, input:input, isCorrect:isCorrect });
+  document.getElementById('slot-answer-input').disabled = true;
+  document.getElementById('slot-input-area').style.display  = 'none';
+  document.getElementById('slot-result-area').style.display = 'block';
+  var judgeEl = document.getElementById('slot-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);';
+  } else {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div><div style="font-size:13px;color:var(--text-muted);margin-top:8px;">あなたの回答：' + (input||'（未入力）') + '</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(255,51,85,0.05);border:1.5px solid rgba(255,51,85,0.3);';
+  }
+  document.getElementById('slot-correct-display').textContent = main;
+  var expArea = document.getElementById('slot-explanation-area');
+  if (q.explanation) {
+    document.getElementById('slot-explanation-text').textContent = q.explanation;
+    expArea.style.display = 'block';
+  } else { expArea.style.display = 'none'; }
+}
+
+function nextSlotQuestion() {
+  _slotIndex++;
+  if (_slotIndex >= _slotTotal) showSlotResult();
+  else showSlotQuestion();
+}
+
+function showSlotResult() {
+  var answeredCount = _slotResults.length;
+  var rate  = answeredCount > 0 ? Math.round(_slotScore/answeredCount*100) : 0;
+  var emoji = rate>=90?'🏆':rate>=70?'🎉':rate>=50?'👍':rate>=30?'😅':'😢';
+  document.getElementById('slot-result-emoji').textContent  = emoji;
+  document.getElementById('slot-result-rate').textContent   = rate + '%';
+  document.getElementById('slot-result-detail').textContent = answeredCount + '問中 ' + _slotScore + '問正解';
+  document.getElementById('slot-result-list').innerHTML = _slotResults.map(function(r){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
+      + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.q.text + '</div>'
+      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + r.q.answer + '</div>' : '')
+      + '</div></div>';
+  }).join('');
+  showScreen('screen-slot-result');
+}
+
+function backToSlotTop() { showSlotTop(); }
+
+/* ── 準備中画面 ── */
+function showPreparing(fromGenreId, message) {
+  _preparingFrom = fromGenreId;
+  var el = document.getElementById('genre-preparing-text');
+  if (el) el.innerHTML = message || 'この問題はまだ準備中です。<br>もうしばらくお待ちください。';
+  showScreen('screen-genre-preparing');
+}
+
+function backFromPreparing() {
+  showScreen('screen-join');
+}
+
 /* ── アイコン2回タッチで問題一覧ボタンを表示（次回は非表示に戻る） ── */
 var _genreIconClickCount = {};
 var _genreListBtnShown   = {}; // このセッション中に一度でも出したかを記録（トップを開き直したら再度リセット）
@@ -602,6 +971,8 @@ function showGenreQuestionList(genreId) {
 function backFromGenreList() {
   if (_genreListFrom === 'nagao') { showNagaoTop(); resetGenreListButton('nagao'); }
   else if (_genreListFrom === 'reborn') { showRebornTop(); resetGenreListButton('reborn'); }
+  else if (_genreListFrom === 'pachi') { showPachiTop(); resetGenreListButton('pachi'); }
+  else if (_genreListFrom === 'slot') { showSlotTop(); resetGenreListButton('slot'); }
   else { showScreen('screen-join'); }
 }
 
@@ -609,18 +980,46 @@ function backFromGenreList() {
 function startGenreQuizSequential(genreId, index) {
   if (genreId === 'nagao') startNagaoQuizSequential(index);
   else if (genreId === 'reborn') startRebornQuizSequential(index);
+  else if (genreId === 'pachi') startPachiQuizSequential(index);
+  else if (genreId === 'slot') startSlotQuizSequential(index);
 }
 
 /* ── 問題一覧のランダム出題ボタン（全問シャッフルして最初から） ── */
 function startGenreRandomFromList() {
   if (_genreListFrom === 'nagao') startNagaoQuiz(getNagaoGenre().questions.length);
   else if (_genreListFrom === 'reborn') startRebornQuiz(getRebornGenre().questions.length);
+  else if (_genreListFrom === 'pachi') startPachiQuiz(getPachiGenre().questions.length);
+  else if (_genreListFrom === 'slot') startSlotQuiz(getSlotGenre().questions.length);
 }
 
 /* ── 途中で終了して、今までの回答内容で結果画面を表示 ── */
 function endGenreQuizNow(genreId) {
   if (genreId === 'nagao') showNagaoResult();
   else if (genreId === 'reborn') showRebornResult();
+  else if (genreId === 'pachi') showPachiResult();
+  else if (genreId === 'slot') showSlotResult();
+}
+
+function startSlotQuizSequential(startIndex) {
+  const g = getSlotGenre();
+  if (!g || g.questions.length === 0) { alert('問題がまだ登録されていません'); return; }
+  _slotQueue   = g.questions;
+  _slotIndex   = startIndex;
+  _slotScore   = 0;
+  _slotTotal   = g.questions.length;
+  _slotResults = [];
+  showSlotQuestion();
+}
+
+function startPachiQuizSequential(startIndex) {
+  const g = getPachiGenre();
+  if (!g || g.questions.length === 0) { alert('問題がまだ登録されていません'); return; }
+  _pachiQueue   = g.questions;
+  _pachiIndex   = startIndex;
+  _pachiScore   = 0;
+  _pachiTotal   = g.questions.length;
+  _pachiResults = [];
+  showPachiQuestion();
 }
 
 function startNagaoQuizSequential(startIndex) {
@@ -737,6 +1136,8 @@ window.joinRoom = async () => {
   if (!inputRoomId || !inputName) { alert('ルームIDと名前を入力してください'); return; }
   if (inputRoomId === 'NAGAO') { showNagaoTop(); return; }
   if (inputRoomId === 'REBORN') { showRebornTop(); return; }
+  if (inputRoomId === 'PACHI') { showPachiTop(); return; }
+  if (inputRoomId === 'SLOT') { showSlotTop(); return; }
   const roomSnap = await get(ref(db, `rooms/${inputRoomId}`));
   if (!roomSnap.exists()) { alert('ルームが見つかりません。ルームIDを確認してください。'); return; }
   roomId=inputRoomId; playerName=inputName;
