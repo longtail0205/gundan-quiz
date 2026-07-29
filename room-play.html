@@ -170,6 +170,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <textarea class="kizyutsu-textarea" id="nagao-answer-input" placeholder="回答を入力..."></textarea>
     <button class="btn btn-primary" onclick="submitNagaoAnswer()" style="margin-top:8px;">✉️ 回答する</button>
   </div>
+  <div id="nagao-choices-area" style="display:none;" class="choices-grid"></div>
   <div id="nagao-result-area" style="display:none;">
     <div id="nagao-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
     <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
@@ -237,6 +238,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <textarea class="kizyutsu-textarea" id="reborn-answer-input" placeholder="回答を入力..."></textarea>
     <button class="btn btn-primary" onclick="submitRebornAnswer()" style="margin-top:8px;">✉️ 回答する</button>
   </div>
+  <div id="reborn-choices-area" style="display:none;" class="choices-grid"></div>
   <div id="reborn-result-area" style="display:none;">
     <div id="reborn-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
     <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
@@ -303,6 +305,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <textarea class="kizyutsu-textarea" id="pachi-answer-input" placeholder="回答を入力..."></textarea>
     <button class="btn btn-primary" onclick="submitPachiAnswer()" style="margin-top:8px;">✉️ 回答する</button>
   </div>
+  <div id="pachi-choices-area" style="display:none;" class="choices-grid"></div>
   <div id="pachi-result-area" style="display:none;">
     <div id="pachi-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
     <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
@@ -379,6 +382,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <textarea class="kizyutsu-textarea" id="slot-answer-input" placeholder="回答を入力..."></textarea>
     <button class="btn btn-primary" onclick="submitSlotAnswer()" style="margin-top:8px;">✉️ 回答する</button>
   </div>
+  <div id="slot-choices-area" style="display:none;" class="choices-grid"></div>
   <div id="slot-result-area" style="display:none;">
     <div id="slot-judge-display" style="text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);"></div>
     <div style="background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
@@ -535,13 +539,57 @@ function showNagaoQuestion() {
   if (q.media) {
     md.innerHTML = '<img src="' + q.media + '" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">';
   } else { md.innerHTML = ''; }
-  document.getElementById('nagao-answer-input').value   = '';
-  document.getElementById('nagao-answer-input').disabled = false;
-  document.getElementById('nagao-input-area').style.display  = 'block';
   document.getElementById('nagao-result-area').style.display = 'none';
+
+  if (q.type === 'yontaku' && q.choices) {
+    document.getElementById('nagao-input-area').style.display = 'none';
+    var choicesArea = document.getElementById('nagao-choices-area');
+    choicesArea.style.display = 'flex';
+    var letters = ['A','B','C','D'];
+    choicesArea.innerHTML = q.choices.map(function(c, i) {
+      return '<button class="choice-btn" onclick="selectNagaoChoice(' + i + ')"><span class="choice-label">' + letters[i] + '</span><span>' + c + '</span></button>';
+    }).join('');
+  } else {
+    document.getElementById('nagao-choices-area').style.display = 'none';
+    document.getElementById('nagao-input-area').style.display = 'block';
+    document.getElementById('nagao-answer-input').value    = '';
+    document.getElementById('nagao-answer-input').disabled = false;
+  }
+
   var nb = document.getElementById('nagao-next-btn');
   if (nb) nb.textContent = _nagaoIndex === _nagaoTotal-1 ? '結果を見る 🏆' : '次の問題へ →';
   showScreen('screen-nagao-quiz');
+}
+
+function selectNagaoChoice(index) {
+  var q = _nagaoQueue[_nagaoIndex];
+  var isCorrect = index === q.correct;
+  if (isCorrect) _nagaoScore++;
+  var letters = ['A','B','C','D'];
+  _nagaoResults.push({ q:q, input: letters[index] + '：' + q.choices[index], isCorrect:isCorrect });
+
+  document.querySelectorAll('#nagao-choices-area .choice-btn').forEach(function(b, i) {
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct-result');
+    else if (i === index) b.classList.add('wrong-result');
+    else b.classList.add('dimmed');
+  });
+
+  document.getElementById('nagao-result-area').style.display = 'block';
+  var judgeEl = document.getElementById('nagao-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);';
+  } else {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(255,51,85,0.05);border:1.5px solid rgba(255,51,85,0.3);';
+  }
+  document.getElementById('nagao-correct-display').textContent = letters[q.correct] + '：' + q.choices[q.correct];
+  var expArea = document.getElementById('nagao-explanation-area');
+  if (q.explanation) {
+    document.getElementById('nagao-explanation-text').textContent = q.explanation;
+    expArea.style.display = 'block';
+  } else { expArea.style.display = 'none'; }
 }
 
 function submitNagaoAnswer() {
@@ -590,7 +638,7 @@ function showNagaoResult() {
       + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
       + '<div style="flex:1;min-width:0;">'
       + '<div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.q.text + '</div>'
-      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + r.q.answer + '</div>' : '')
+      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + (r.q.answer || (r.q.choices ? r.q.choices[r.q.correct] : '')) + '</div>' : '')
       + '</div></div>';
   }).join('');
   showScreen('screen-nagao-result');
@@ -639,13 +687,57 @@ function showRebornQuestion() {
   if (q.media) {
     md.innerHTML = '<img src="' + q.media + '" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">';
   } else { md.innerHTML = ''; }
-  document.getElementById('reborn-answer-input').value    = '';
-  document.getElementById('reborn-answer-input').disabled = false;
-  document.getElementById('reborn-input-area').style.display  = 'block';
   document.getElementById('reborn-result-area').style.display = 'none';
+
+  if (q.type === 'yontaku' && q.choices) {
+    document.getElementById('reborn-input-area').style.display = 'none';
+    var choicesArea = document.getElementById('reborn-choices-area');
+    choicesArea.style.display = 'flex';
+    var letters = ['A','B','C','D'];
+    choicesArea.innerHTML = q.choices.map(function(c, i) {
+      return '<button class="choice-btn" onclick="selectRebornChoice(' + i + ')"><span class="choice-label">' + letters[i] + '</span><span>' + c + '</span></button>';
+    }).join('');
+  } else {
+    document.getElementById('reborn-choices-area').style.display = 'none';
+    document.getElementById('reborn-input-area').style.display = 'block';
+    document.getElementById('reborn-answer-input').value    = '';
+    document.getElementById('reborn-answer-input').disabled = false;
+  }
+
   var nb = document.getElementById('reborn-next-btn');
   if (nb) nb.textContent = _rebornIndex === _rebornTotal-1 ? '結果を見る 🏆' : '次の問題へ →';
   showScreen('screen-reborn-quiz');
+}
+
+function selectRebornChoice(index) {
+  var q = _rebornQueue[_rebornIndex];
+  var isCorrect = index === q.correct;
+  if (isCorrect) _rebornScore++;
+  var letters = ['A','B','C','D'];
+  _rebornResults.push({ q:q, input: letters[index] + '：' + q.choices[index], isCorrect:isCorrect });
+
+  document.querySelectorAll('#reborn-choices-area .choice-btn').forEach(function(b, i) {
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct-result');
+    else if (i === index) b.classList.add('wrong-result');
+    else b.classList.add('dimmed');
+  });
+
+  document.getElementById('reborn-result-area').style.display = 'block';
+  var judgeEl = document.getElementById('reborn-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);';
+  } else {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(255,51,85,0.05);border:1.5px solid rgba(255,51,85,0.3);';
+  }
+  document.getElementById('reborn-correct-display').textContent = letters[q.correct] + '：' + q.choices[q.correct];
+  var expArea = document.getElementById('reborn-explanation-area');
+  if (q.explanation) {
+    document.getElementById('reborn-explanation-text').textContent = q.explanation;
+    expArea.style.display = 'block';
+  } else { expArea.style.display = 'none'; }
 }
 
 function submitRebornAnswer() {
@@ -694,7 +786,7 @@ function showRebornResult() {
       + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
       + '<div style="flex:1;min-width:0;">'
       + '<div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.q.text + '</div>'
-      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + r.q.answer + '</div>' : '')
+      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + (r.q.answer || (r.q.choices ? r.q.choices[r.q.correct] : '')) + '</div>' : '')
       + '</div></div>';
   }).join('');
   showScreen('screen-reborn-result');
@@ -743,13 +835,57 @@ function showPachiQuestion() {
   if (q.media) {
     md.innerHTML = '<img src="' + q.media + '" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">';
   } else { md.innerHTML = ''; }
-  document.getElementById('pachi-answer-input').value    = '';
-  document.getElementById('pachi-answer-input').disabled = false;
-  document.getElementById('pachi-input-area').style.display  = 'block';
   document.getElementById('pachi-result-area').style.display = 'none';
+
+  if (q.type === 'yontaku' && q.choices) {
+    document.getElementById('pachi-input-area').style.display = 'none';
+    var choicesArea = document.getElementById('pachi-choices-area');
+    choicesArea.style.display = 'flex';
+    var letters = ['A','B','C','D'];
+    choicesArea.innerHTML = q.choices.map(function(c, i) {
+      return '<button class="choice-btn" onclick="selectPachiChoice(' + i + ')"><span class="choice-label">' + letters[i] + '</span><span>' + c + '</span></button>';
+    }).join('');
+  } else {
+    document.getElementById('pachi-choices-area').style.display = 'none';
+    document.getElementById('pachi-input-area').style.display = 'block';
+    document.getElementById('pachi-answer-input').value    = '';
+    document.getElementById('pachi-answer-input').disabled = false;
+  }
+
   var nb = document.getElementById('pachi-next-btn');
   if (nb) nb.textContent = _pachiIndex === _pachiTotal-1 ? '結果を見る 🏆' : '次の問題へ →';
   showScreen('screen-pachi-quiz');
+}
+
+function selectPachiChoice(index) {
+  var q = _pachiQueue[_pachiIndex];
+  var isCorrect = index === q.correct;
+  if (isCorrect) _pachiScore++;
+  var letters = ['A','B','C','D'];
+  _pachiResults.push({ q:q, input: letters[index] + '：' + q.choices[index], isCorrect:isCorrect });
+
+  document.querySelectorAll('#pachi-choices-area .choice-btn').forEach(function(b, i) {
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct-result');
+    else if (i === index) b.classList.add('wrong-result');
+    else b.classList.add('dimmed');
+  });
+
+  document.getElementById('pachi-result-area').style.display = 'block';
+  var judgeEl = document.getElementById('pachi-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);';
+  } else {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(255,51,85,0.05);border:1.5px solid rgba(255,51,85,0.3);';
+  }
+  document.getElementById('pachi-correct-display').textContent = letters[q.correct] + '：' + q.choices[q.correct];
+  var expArea = document.getElementById('pachi-explanation-area');
+  if (q.explanation) {
+    document.getElementById('pachi-explanation-text').textContent = q.explanation;
+    expArea.style.display = 'block';
+  } else { expArea.style.display = 'none'; }
 }
 
 function submitPachiAnswer() {
@@ -798,7 +934,7 @@ function showPachiResult() {
       + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
       + '<div style="flex:1;min-width:0;">'
       + '<div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.q.text + '</div>'
-      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + r.q.answer + '</div>' : '')
+      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + (r.q.answer || (r.q.choices ? r.q.choices[r.q.correct] : '')) + '</div>' : '')
       + '</div></div>';
   }).join('');
   showScreen('screen-pachi-result');
@@ -852,13 +988,57 @@ function showSlotQuestion() {
   if (q.media) {
     md.innerHTML = '<img src="' + q.media + '" alt="問題画像" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;margin-bottom:12px;">';
   } else { md.innerHTML = ''; }
-  document.getElementById('slot-answer-input').value    = '';
-  document.getElementById('slot-answer-input').disabled = false;
-  document.getElementById('slot-input-area').style.display  = 'block';
   document.getElementById('slot-result-area').style.display = 'none';
+
+  if (q.type === 'yontaku' && q.choices) {
+    document.getElementById('slot-input-area').style.display = 'none';
+    var choicesArea = document.getElementById('slot-choices-area');
+    choicesArea.style.display = 'flex';
+    var letters = ['A','B','C','D'];
+    choicesArea.innerHTML = q.choices.map(function(c, i) {
+      return '<button class="choice-btn" onclick="selectSlotChoice(' + i + ')"><span class="choice-label">' + letters[i] + '</span><span>' + c + '</span></button>';
+    }).join('');
+  } else {
+    document.getElementById('slot-choices-area').style.display = 'none';
+    document.getElementById('slot-input-area').style.display = 'block';
+    document.getElementById('slot-answer-input').value    = '';
+    document.getElementById('slot-answer-input').disabled = false;
+  }
+
   var nb = document.getElementById('slot-next-btn');
   if (nb) nb.textContent = _slotIndex === _slotTotal-1 ? '結果を見る 🏆' : '次の問題へ →';
   showScreen('screen-slot-quiz');
+}
+
+function selectSlotChoice(index) {
+  var q = _slotQueue[_slotIndex];
+  var isCorrect = index === q.correct;
+  if (isCorrect) _slotScore++;
+  var letters = ['A','B','C','D'];
+  _slotResults.push({ q:q, input: letters[index] + '：' + q.choices[index], isCorrect:isCorrect });
+
+  document.querySelectorAll('#slot-choices-area .choice-btn').forEach(function(b, i) {
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct-result');
+    else if (i === index) b.classList.add('wrong-result');
+    else b.classList.add('dimmed');
+  });
+
+  document.getElementById('slot-result-area').style.display = 'block';
+  var judgeEl = document.getElementById('slot-judge-display');
+  if (isCorrect) {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--correct);text-shadow:0 0 20px var(--correct);">✅ 正解！</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(0,255,170,0.05);border:1.5px solid rgba(0,255,170,0.3);';
+  } else {
+    judgeEl.innerHTML = '<div style="font-family:\'Dela Gothic One\',sans-serif;font-size:48px;color:var(--wrong);text-shadow:0 0 20px var(--wrong);">❌ 不正解</div>';
+    judgeEl.style.cssText = 'text-align:center;padding:16px;margin-bottom:12px;border-radius:var(--radius);background:rgba(255,51,85,0.05);border:1.5px solid rgba(255,51,85,0.3);';
+  }
+  document.getElementById('slot-correct-display').textContent = letters[q.correct] + '：' + q.choices[q.correct];
+  var expArea = document.getElementById('slot-explanation-area');
+  if (q.explanation) {
+    document.getElementById('slot-explanation-text').textContent = q.explanation;
+    expArea.style.display = 'block';
+  } else { expArea.style.display = 'none'; }
 }
 
 function submitSlotAnswer() {
@@ -907,7 +1087,7 @@ function showSlotResult() {
       + '<span style="font-size:18px;">' + (r.isCorrect?'✅':'❌') + '</span>'
       + '<div style="flex:1;min-width:0;">'
       + '<div style="font-size:12px;color:#ddd;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + r.q.text + '</div>'
-      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + r.q.answer + '</div>' : '')
+      + (!r.isCorrect ? '<div style="font-size:11px;color:var(--text-muted);">正解：' + (r.q.answer || (r.q.choices ? r.q.choices[r.q.correct] : '')) + '</div>' : '')
       + '</div></div>';
   }).join('');
   showScreen('screen-slot-result');
