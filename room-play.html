@@ -1304,7 +1304,7 @@ if (urlName)   document.getElementById('input-name').value    = urlName;
     document.getElementById('play-room-badge').textContent  = `ROOM: ${roomId}`;
     document.getElementById('play-name-badge').textContent  = playerName;
     document.getElementById('play-room-id-bar').textContent = `ROOM: ${roomId}`;
-    listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard();
+    listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard(); listenKobayakawaStart();
     showScreen('screen-waiting');
   } catch(e) {}
 })();
@@ -1328,7 +1328,7 @@ window.joinRoom = async () => {
   document.getElementById('play-room-badge').textContent  = `ROOM: ${roomId}`;
   document.getElementById('play-name-badge').textContent  = playerName;
   document.getElementById('play-room-id-bar').textContent = `ROOM: ${roomId}`;
-  listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard();
+  listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard(); listenKobayakawaStart();
   showScreen('screen-waiting');
 };
 
@@ -1531,6 +1531,21 @@ function listenPointBoard() {
   onValue(pbRef, snap => {
     const data = snap.val();
     if (window.renderPointBoardView) window.renderPointBoardView(data || []);
+  });
+}
+
+let _kobayakawaPrompted = false;
+function listenKobayakawaStart() {
+  const kRef = ref(db, `rooms/${roomId}/kobayakawa/status`);
+  onValue(kRef, snap => {
+    const status = snap.val();
+    if (!status || _kobayakawaPrompted) return;
+    if (location.pathname.includes('kobayakawa.html')) return;
+    _kobayakawaPrompted = true;
+    if (confirm('🃏 小早川が始まりました！\n参加しますか？')) {
+      const url = `${location.origin}${location.pathname.replace('room-play.html', 'kobayakawa.html')}?room=${roomId}&pid=${playerId}&name=${encodeURIComponent(playerName)}`;
+      location.href = url;
+    }
   });
 }
 

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小早川</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#ffd700;--gold2:#ffaa00;--gold3:#cc8800;--bg-dark:#0a0412;--bg-card:#1a0e2e;--bg-card2:#221540;--correct:#00ffaa;--wrong:#ff3355;--text-muted:#aaa8cc;--radius:14px;--radius-lg:20px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg-dark);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px 16px 48px;overflow-x:hidden;color:#fff;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,#0a3020 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 100%,#001a44 0%,transparent 60%);pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:520px;position:relative;z-index:1;}
+.screen{display:none;animation:fadeIn 0.3s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.title{font-family:'Dela Gothic One',sans-serif;font-size:clamp(26px,6vw,38px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.5),3px 3px 0 #114422;text-align:center;margin-bottom:8px;}
+.sub{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:24px;}
+.card{background:var(--bg-card);border:1.5px solid rgba(0,255,170,0.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+.card-title{font-size:12px;font-weight:700;color:var(--correct);letter-spacing:0.08em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,255,170,0.15);}
+.btn{display:block;width:100%;padding:15px;border-radius:50px;font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.15s;border:none;letter-spacing:0.05em;text-align:center;}
+.btn-primary{background:linear-gradient(135deg,#00aa66,#006633);color:#fff;box-shadow:0 4px 0 #003318,0 0 20px rgba(0,255,150,0.3);}
+.btn-primary:hover{transform:translateY(-2px);}
+.btn-primary:active{transform:translateY(2px);box-shadow:none;}
+.btn-gold{background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,170,0,0.15));color:var(--gold);border:1.5px solid rgba(255,215,0,0.4);}
+.btn-red{background:linear-gradient(135deg,rgba(255,51,85,0.25),rgba(150,0,30,0.2));color:#ff8899;border:1.5px solid rgba(255,51,85,0.5);}
+.btn-row{display:flex;gap:10px;}
+.btn-row .btn{flex:1;}
+.btn:disabled{opacity:0.3;cursor:not-allowed;}
+.player-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(0,255,170,0.12);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;}
+.player-row.turn{border-color:var(--gold);background:rgba(255,215,0,0.08);}
+.player-row.eliminated{opacity:0.35;}
+.player-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold2),var(--gold3));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#1a0800;flex-shrink:0;}
+.player-name{flex:1;font-size:13px;font-weight:700;}
+.player-medals{font-family:'Dela Gothic One',sans-serif;font-size:16px;color:var(--gold);}
+.kobayakawa-card-display{text-align:center;padding:20px;background:rgba(255,215,0,0.06);border:2px solid rgba(255,215,0,0.3);border-radius:var(--radius-lg);margin-bottom:16px;}
+.kb-label{font-size:11px;color:var(--gold2);font-weight:700;margin-bottom:8px;letter-spacing:0.1em;}
+.kb-number{font-family:'Dela Gothic One',sans-serif;font-size:56px;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.6);}
+.my-hand-display{text-align:center;padding:24px;background:rgba(0,255,170,0.05);border:2px solid rgba(0,255,170,0.3);border-radius:var(--radius-lg);margin-bottom:16px;}
+.my-hand-label{font-size:11px;color:var(--correct);font-weight:700;margin-bottom:8px;letter-spacing:0.1em;}
+.my-hand-number{font-family:'Dela Gothic One',sans-serif;font-size:72px;color:var(--correct);text-shadow:0 0 24px rgba(0,255,170,0.5);}
+.choice-card-btn{background:var(--bg-card);border:2px solid rgba(0,255,170,0.2);border-radius:var(--radius);padding:16px;cursor:pointer;text-align:center;transition:all 0.15s;flex:1;}
+.choice-card-btn:hover{border-color:var(--correct);background:var(--bg-card2);}
+.choice-card-btn .num{font-family:'Dela Gothic One',sans-serif;font-size:36px;color:#fff;}
+.discard-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.discard-chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:4px 10px;font-size:12px;color:#ccc;}
+.status-bar{background:rgba(255,255,255,0.04);border:1px solid rgba(0,255,170,0.15);border-radius:50px;padding:8px 16px;display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:12px;color:var(--text-muted);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--correct);box-shadow:0 0 8px var(--correct);flex-shrink:0;}
+.waiting-msg{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px;}
+.result-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;}
+.result-row.winner{border-color:var(--gold);background:rgba(255,215,0,0.08);}
+.result-row.folded{opacity:0.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- 準備中/待機 -->
+<div class="screen active" id="screen-waiting">
+  <div class="title">🃏 小早川</div>
+  <div class="sub">数字とメダルの駆け引きゲーム</div>
+  <div class="card">
+    <div class="card-title">参加者</div>
+    <div id="wait-player-list"></div>
+  </div>
+  <div id="host-start-area" style="display:none;">
+    <button class="btn btn-primary" onclick="hostStartGame()">▶ ゲーム開始（全7ラウンド）</button>
+  </div>
+  <div id="guest-wait-area">
+    <div class="waiting-msg">ホストの開始を待っています...</div>
+  </div>
+</div>
+
+<!-- ゲーム進行画面 -->
+<div class="screen" id="screen-game">
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span id="round-label">ラウンド 1 / 7</span>
+    <span style="margin-left:auto;font-size:11px;color:var(--gold2);" id="pool-label">場：8枚</span>
+  </div>
+
+  <div class="kobayakawa-card-display">
+    <div class="kb-label">🎴 小早川カード（一番小さい数字にプラスされる）</div>
+    <div class="kb-number" id="kb-card-number">-</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">プレイヤー</div>
+    <div id="game-player-list"></div>
+  </div>
+
+  <!-- 自分の手番：行動選択 -->
+  <div id="action-my-turn-area" style="display:none;">
+    <div class="my-hand-display">
+      <div class="my-hand-label">あなたの手札</div>
+      <div class="my-hand-number" id="my-hand-number">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title">あなたの番です。行動を選んでください</div>
+      <div class="btn-row" style="margin-bottom:10px;">
+        <button class="btn btn-primary" onclick="actionDraw()">🂠 カードを引いて交換する</button>
+      </div>
+      <button class="btn btn-gold" onclick="actionSwapKobayakawa()">🔄 カードを引いて小早川カードを変える</button>
+    </div>
+  </div>
+
+  <!-- 自分の手番：引いたカードから1枚捨てる -->
+  <div id="action-discard-area" style="display:none;">
+    <div class="card">
+      <div class="card-title">どちらか1枚を表にして捨ててください（残った1枚が新しい手札）</div>
+      <div class="btn-row">
+        <div class="choice-card-btn" onclick="discardCard(0)"><div class="num" id="discard-choice-0">-</div></div>
+        <div class="choice-card-btn" onclick="discardCard(1)"><div class="num" id="discard-choice-1">-</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 他の人の手番待ち -->
+  <div id="action-waiting-area" style="display:none;">
+    <div class="my-hand-display">
+      <div class="my-hand-label">あなたの手札</div>
+      <div class="my-hand-number" id="my-hand-number-2">-</div>
+    </div>
+    <div class="waiting-msg" id="action-waiting-text">他のプレイヤーの手番です...</div>
+  </div>
+
+  <!-- 賭けフェーズ -->
+  <div id="bet-area" style="display:none;">
+    <div class="my-hand-display">
+      <div class="my-hand-label">あなたの手札</div>
+      <div class="my-hand-number" id="my-hand-number-3">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="bet-title">勝負しますか？（メダル1枚を賭けます）</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-bet-challenge" onclick="submitBet(true)">🔥 勝負する</button>
+        <button class="btn btn-red" id="btn-bet-fold" onclick="submitBet(false)">🏳️ 降りる</button>
+      </div>
+      <div id="bet-status" style="margin-top:12px;font-size:12px;color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+  <!-- 捨て札一覧 -->
+  <div class="card" id="discard-pile-card">
+    <div class="card-title">捨て札（公開情報）</div>
+    <div class="discard-row" id="discard-pile-list"></div>
+  </div>
+
+  <!-- ホスト用進行ボタン -->
+  <div id="host-controls-area" style="display:none;margin-top:10px;">
+    <button class="btn btn-gold" id="btn-host-resolve" onclick="hostResolveRound()">🎲 勝負を判定する</button>
+    <button class="btn btn-gold" id="btn-host-next" onclick="hostNextRound()" style="display:none;">▶ 次のラウンドへ</button>
+    <button class="btn btn-gold" id="btn-host-finish" onclick="hostShowFinal()" style="display:none;">🏆 最終結果を見る</button>
+  </div>
+</div>
+
+<!-- ラウンド結果画面 -->
+<div class="screen" id="screen-round-result">
+  <div class="title" style="font-size:24px;">ラウンド結果</div>
+  <div class="card">
+    <div id="round-result-content"></div>
+  </div>
+  <div id="round-result-host-btns" style="display:none;">
+    <button class="btn btn-primary" onclick="hostBackToGameFromResult()">▶ 次へ進む</button>
+  </div>
+  <div id="round-result-guest-msg" class="waiting-msg">ホストの操作をお待ちください...</div>
+</div>
+
+<!-- 最終結果画面 -->
+<div class="screen" id="screen-final">
+  <div class="title" style="font-size:26px;">🏆 最終結果</div>
+  <div class="card">
+    <div id="final-result-content"></div>
+  </div>
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, off, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDISToSZkNspKlZyHmQ2LGrdFFXlEUUEjU",
+  authDomain: "gundan-quiz.firebaseapp.com",
+  databaseURL: "https://gundan-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gundan-quiz",
+  storageBucket: "gundan-quiz.firebasestorage.app",
+  messagingSenderId: "1033936435467",
+  appId: "1:1033936435467:web:81650f44cb5e6a093aca0e"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const urlParams = new URLSearchParams(location.search);
+const roomId   = urlParams.get('room');
+const myPid    = urlParams.get('pid');
+const myName   = urlParams.get('name');
+const isHost   = urlParams.get('host') === '1';
+
+if (!roomId || !myPid) {
+  document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#fff;">不正なアクセスです。room-host.htmlから「小早川をプレイする」を押してください。</div>';
+  throw new Error('missing params');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const kRef = () => ref(db, `rooms/${roomId}/kobayakawa`);
+
+/* ============================================================
+   待機画面
+============================================================ */
+let _lastStatus = null;
+let _lastActionSeen = null;
+let _lastBetPhaseSeen = null;
+let _lastResultSeen = false;
+
+onValue(kRef(), snap => {
+  const data = snap.val();
+  if (!data) return;
+  renderState(data);
+});
+
+function renderState(data) {
+  const players = data.players || {};
+  const myData  = players[myPid] || {};
+
+  if (data.status === 'waiting') {
+    renderWaitingScreen(players);
+    showScreen('screen-waiting');
+    return;
+  }
+
+  if (data.status === 'finished') {
+    renderFinalScreen(data, players);
+    showScreen('screen-final');
+    return;
+  }
+
+  if (data.status === 'round_result') {
+    renderRoundResult(data, players);
+    showScreen('screen-round-result');
+    return;
+  }
+
+  // ゲーム進行中
+  document.getElementById('round-label').textContent = `ラウンド ${data.round} / 7`;
+  document.getElementById('pool-label').textContent  = `場：${data.pool}枚`;
+  document.getElementById('kb-card-number').textContent = data.kobayakawaCard != null ? data.kobayakawaCard : '-';
+
+  renderGamePlayerList(data, players);
+  renderDiscardPile(data.discard || []);
+
+  document.getElementById('host-controls-area').style.display = isHost ? 'block' : 'none';
+
+  if (data.status === 'action') {
+    handleActionPhase(data, players, myData);
+  } else if (data.status === 'bet') {
+    handleBetPhase(data, players, myData);
+  }
+
+  showScreen('screen-game');
+}
+
+function renderWaitingScreen(players) {
+  const list = Object.entries(players);
+  document.getElementById('wait-player-list').innerHTML = list.map(([id, p]) => `
+    <div class="player-row">
+      <div class="player-avatar">${p.name.charAt(0)}</div>
+      <div class="player-name">${p.name}</div>
+      <div class="player-medals">${p.medals}枚</div>
+    </div>
+  `).join('');
+  document.getElementById('host-start-area').style.display = isHost ? 'block' : 'none';
+  document.getElementById('guest-wait-area').style.display = isHost ? 'none' : 'block';
+}
+
+function renderGamePlayerList(data, players) {
+  const turnOrder = data.turnOrder || [];
+  const currentActorId = turnOrder[data.currentTurnIndex];
+  document.getElementById('game-player-list').innerHTML = Object.entries(players).map(([id, p]) => `
+    <div class="player-row ${id === currentActorId && data.status === 'action' ? 'turn' : ''} ${p.eliminated ? 'eliminated' : ''}">
+      <div class="player-avatar">${p.name.charAt(0)}</div>
+      <div class="player-name">${p.name}${p.eliminated ? '（脱落）' : ''}</div>
+      <div class="player-medals">${p.medals}枚</div>
+    </div>
+  `).join('');
+}
+
+function renderDiscardPile(discard) {
+  document.getElementById('discard-pile-list').innerHTML = discard.length
+    ? discard.map(n => `<span class="discard-chip">${n}</span>`).join('')
+    : '<span style="font-size:12px;color:var(--text-muted);">まだありません</span>';
+}
+
+/* ============================================================
+   アクションフェーズ（引く・交換する・小早川カード交換）
+============================================================ */
+function handleActionPhase(data, players, myData) {
+  const turnOrder = data.turnOrder || [];
+  const currentActorId = turnOrder[data.currentTurnIndex];
+  document.getElementById('btn-host-resolve').style.display = 'none';
+  document.getElementById('btn-host-next').style.display = 'none';
+  document.getElementById('btn-host-finish').style.display = 'none';
+
+  document.getElementById('action-my-turn-area').style.display = 'none';
+  document.getElementById('action-discard-area').style.display = 'none';
+  document.getElementById('action-waiting-area').style.display = 'none';
+  document.getElementById('bet-area').style.display = 'none';
+
+  if (myData.eliminated) {
+    document.getElementById('action-waiting-area').style.display = 'block';
+    document.getElementById('my-hand-number-2').textContent = '脱落中';
+    document.getElementById('action-waiting-text').textContent = '脱落しているため観戦中です';
+    return;
+  }
+
+  // 引いた後の一時カードがある（自分が捨てる選択待ち）
+  if (data.pendingDraw && data.pendingDraw.playerId === myPid) {
+    document.getElementById('action-discard-area').style.display = 'block';
+    document.getElementById('discard-choice-0').textContent = myData.hand;
+    document.getElementById('discard-choice-1').textContent = data.pendingDraw.card;
+    return;
+  }
+
+  if (currentActorId === myPid) {
+    document.getElementById('action-my-turn-area').style.display = 'block';
+    document.getElementById('my-hand-number').textContent = myData.hand;
+  } else {
+    document.getElementById('action-waiting-area').style.display = 'block';
+    document.getElementById('my-hand-number-2').textContent = myData.hand;
+    const actorName = (players[currentActorId] || {}).name || '？';
+    document.getElementById('action-waiting-text').textContent = `${actorName} の手番です...`;
+  }
+}
+
+window.actionDraw = async () => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const deck = data.deck || [];
+  if (deck.length === 0) { await hostAdvanceActionTurn(); return; }
+  const drawnCard = deck[deck.length - 1];
+  const newDeck   = deck.slice(0, -1);
+  await update(kRef(), {
+    deck: newDeck,
+    pendingDraw: { playerId: myPid, card: drawnCard }
+  });
+};
+
+window.actionSwapKobayakawa = async () => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const deck = data.deck || [];
+  if (deck.length === 0) { await hostAdvanceActionTurn(); return; }
+  const drawnCard = deck[deck.length - 1];
+  const newDeck   = deck.slice(0, -1);
+  const oldKb = data.kobayakawaCard;
+  const newDiscard = (data.discard || []).concat(oldKb != null ? [oldKb] : []);
+  await update(kRef(), {
+    deck: newDeck,
+    kobayakawaCard: drawnCard,
+    discard: newDiscard
+  });
+  await advanceActionTurn();
+};
+
+window.discardCard = async (choiceIndex) => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const myData = (data.players || {})[myPid];
+  const oldHand = myData.hand;
+  const drawn   = data.pendingDraw.card;
+  const options = [oldHand, drawn];
+  const discarded = options[choiceIndex];
+  const kept      = options[1 - choiceIndex];
+
+  const newDiscard = (data.discard || []).concat([discarded]);
+  await update(kRef(), {
+    [`players/${myPid}/hand`]: kept,
+    discard: newDiscard,
+    pendingDraw: null
+  });
+  await advanceActionTurn();
+};
+
+async function advanceActionTurn() {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const turnOrder = data.turnOrder || [];
+  const nextIndex = data.currentTurnIndex + 1;
+  if (nextIndex >= turnOrder.length) {
+    // 全員行動完了 → 賭けフェーズへ
+    await update(kRef(), { status: 'bet', bets: {} });
+  } else {
+    await update(kRef(), { currentTurnIndex: nextIndex });
+  }
+}
+async function hostAdvanceActionTurn() { await advanceActionTurn(); }
+
+/* ============================================================
+   賭けフェーズ
+============================================================ */
+function handleBetPhase(data, players, myData) {
+  document.getElementById('action-my-turn-area').style.display = 'none';
+  document.getElementById('action-discard-area').style.display = 'none';
+  document.getElementById('action-waiting-area').style.display = 'none';
+
+  document.getElementById('btn-host-resolve').style.display = 'none';
+  document.getElementById('btn-host-next').style.display = 'none';
+  document.getElementById('btn-host-finish').style.display = 'none';
+
+  const bets = data.bets || {};
+  const allPlayerIds = Object.keys(players).filter(id => !players[id].eliminated);
+  const allSubmitted = allPlayerIds.every(id => bets[id] !== undefined);
+
+  if (myData.eliminated) {
+    document.getElementById('bet-area').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('bet-area').style.display = 'block';
+  document.getElementById('my-hand-number-3').textContent = myData.hand;
+
+  const myBetSubmitted = bets[myPid] !== undefined;
+  document.getElementById('btn-bet-challenge').disabled = myBetSubmitted;
+  document.getElementById('btn-bet-fold').disabled = myBetSubmitted;
+  document.getElementById('bet-status').textContent = myBetSubmitted
+    ? '判定を待っています...'
+    : `${allPlayerIds.filter(id => bets[id] !== undefined).length} / ${allPlayerIds.length} 人が決定済み`;
+
+  if (isHost && allSubmitted) {
+    document.getElementById('btn-host-resolve').style.display = 'block';
+  }
+}
+
+window.submitBet = async (challenge) => {
+  await update(kRef(), { [`bets/${myPid}`]: challenge });
+};
+
+/* ============================================================
+   ホストの操作：勝負判定・ラウンド進行
+============================================================ */
+window.hostResolveRound = async () => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const players = data.players || {};
+  const bets = data.bets || {};
+  const kbCard = data.kobayakawaCard;
+
+  const challengers = Object.keys(bets).filter(id => bets[id] === true);
+  let resultText = [];
+  const updates = {};
+  let pool = data.pool;
+
+  if (challengers.length === 0) {
+    resultText.push('勝負に出た人はいませんでした。');
+  } else if (challengers.length === 1) {
+    const winnerId = challengers[0];
+    updates[`players/${winnerId}/medals`] = players[winnerId].medals + 1;
+    pool = Math.max(0, pool - 1);
+    resultText.push(`${players[winnerId].name} だけが勝負に出たため、場から1枚獲得！`);
+  } else {
+    // 複数人が勝負：カードを比較
+    const hands = challengers.map(id => ({ id, card: players[id].hand }));
+    const minCard = Math.min(...hands.map(h => h.card));
+    const totals = hands.map(h => ({
+      id: h.id,
+      card: h.card,
+      total: h.card + (h.card === minCard ? kbCard : 0)
+    }));
+    const maxTotal = Math.max(...totals.map(t => t.total));
+    const winners = totals.filter(t => t.total === maxTotal);
+    // 同数の場合は turnOrder が早い方
+    const turnOrder = data.turnOrder || [];
+    winners.sort((a, b) => turnOrder.indexOf(a.id) - turnOrder.indexOf(b.id));
+    const winnerId = winners[0].id;
+
+    // 賭け金（挑戦者全員のメダル1枚ずつ）を集める
+    let potFromChallengers = 0;
+    challengers.forEach(id => {
+      if (id !== winnerId) {
+        updates[`players/${id}/medals`] = Math.max(0, players[id].medals - 1);
+        potFromChallengers++;
+      }
+    });
+    const poolBonus = pool > 0 ? 1 : 0;
+    pool = Math.max(0, pool - poolBonus);
+    updates[`players/${winnerId}/medals`] = players[winnerId].medals + potFromChallengers + poolBonus;
+
+    resultText = totals.map(t => {
+      const bonusText = t.card === minCard ? `（小早川+${kbCard} → 合計${t.total}）` : `（合計${t.total}）`;
+      const winMark = t.id === winnerId ? ' 🏆勝利！' : '';
+      return `${players[t.id].name}：${t.card}${bonusText}${winMark}`;
+    });
+  }
+
+  // 脱落判定
+  Object.entries(players).forEach(([id, p]) => {
+    const newMedals = updates[`players/${id}/medals`] !== undefined ? updates[`players/${id}/medals`] : p.medals;
+    if (newMedals <= 0) updates[`players/${id}/eliminated`] = true;
+  });
+
+  updates.pool = pool;
+  updates.status = 'round_result';
+  updates.lastResultText = resultText.join('\n');
+  updates.lastWinnerId = challengers.length > 0 ? (challengers.length === 1 ? challengers[0] : null) : null;
+
+  await update(kRef(), updates);
+};
+
+function renderRoundResult(data, players) {
+  const lines = (data.lastResultText || '').split('\n').filter(l => l);
+  document.getElementById('round-result-content').innerHTML =
+    `<div class="card-title">ラウンド ${data.round} の結果</div>` +
+    (lines.length ? lines.map(l => `<div class="result-row">${l}</div>`).join('') : '<div class="waiting-msg">動きはありませんでした</div>') +
+    `<div style="margin-top:16px;">` +
+    Object.entries(players).map(([id, p]) => `
+      <div class="result-row ${p.eliminated ? 'folded' : ''}">
+        <div class="player-avatar">${p.name.charAt(0)}</div>
+        <div class="player-name">${p.name}</div>
+        <div class="player-medals">${p.medals}枚</div>
+      </div>`).join('') +
+    `</div>`;
+
+  document.getElementById('round-result-host-btns').style.display = isHost ? 'block' : 'none';
+  document.getElementById('round-result-guest-msg').style.display = isHost ? 'none' : 'block';
+}
+
+window.hostBackToGameFromResult = async () => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const players = data.players || {};
+  const activePlayers = Object.entries(players).filter(([id, p]) => !p.eliminated);
+
+  if (data.round >= 7 || activePlayers.length <= 1) {
+    await update(kRef(), { status: 'finished' });
+    return;
+  }
+
+  await startNewRound(data, players);
+};
+
+async function startNewRound(data, players) {
+  const activeIds = Object.entries(players).filter(([id, p]) => !p.eliminated).map(([id]) => id);
+
+  // 勝者を先手に（勝者がいなければ順番そのまま）
+  let turnOrder = activeIds;
+  if (data.lastWinnerId && activeIds.includes(data.lastWinnerId)) {
+    const idx = activeIds.indexOf(data.lastWinnerId);
+    turnOrder = activeIds.slice(idx).concat(activeIds.slice(0, idx));
+  }
+
+  let deck = data.deck || [];
+  let discard = data.discard || [];
+  let kobayakawaCard = data.kobayakawaCard;
+
+  // カードが不足したら山札を再構築（1-15から現在使用中の手札・小早川カードを除いて再シャッフル）
+  const usedCards = activeIds.map(id => players[id].hand).concat(kobayakawaCard != null ? [kobayakawaCard] : []);
+  if (deck.length < activeIds.length + 2) {
+    let fresh = [];
+    for (let n = 1; n <= 15; n++) if (!usedCards.includes(n)) fresh.push(n);
+    deck = shuffle(fresh.concat(discard));
+    discard = [];
+  }
+
+  // 各プレイヤーに新しい手札を配る（前のラウンドの手札はそのまま維持、というルールではなく毎ラウンド配り直す簡易仕様）
+  const updates = { round: data.round + 1, status: 'action', currentTurnIndex: 0, turnOrder, bets: {}, pendingDraw: null };
+  activeIds.forEach(id => {
+    const card = deck.pop();
+    updates[`players/${id}/hand`] = card;
+  });
+  const kbNew = deck.pop();
+  updates.kobayakawaCard = kbNew;
+  updates.deck = deck;
+  updates.discard = discard;
+
+  await update(kRef(), updates);
+}
+
+window.hostShowFinal = async () => {
+  await update(kRef(), { status: 'finished' });
+};
+
+function renderFinalScreen(data, players) {
+  const sorted = Object.entries(players).sort((a, b) => b[1].medals - a[1].medals);
+  const ranks = ['🥇', '🥈', '🥉'];
+  document.getElementById('final-result-content').innerHTML = sorted.map(([id, p], i) => `
+    <div class="result-row ${i === 0 ? 'winner' : ''}">
+      <span style="font-size:20px;min-width:28px;">${ranks[i] || (i + 1)}</span>
+      <div class="player-avatar">${p.name.charAt(0)}</div>
+      <div class="player-name">${p.name}</div>
+      <div class="player-medals">${p.medals}枚</div>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   ホスト：ゲーム開始
+============================================================ */
+window.hostStartGame = async () => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const players = data.players || {};
+  const playerIds = Object.keys(players);
+
+  if (playerIds.length < 2) { alert('参加者が足りません'); return; }
+
+  const pool = 8;
+  const turnOrder = shuffle(playerIds.slice());
+
+  let deck = [];
+  for (let n = 1; n <= 15; n++) deck.push(n);
+  deck = shuffle(deck);
+
+  const updates = {
+    status: 'action',
+    round: 1,
+    pool,
+    turnOrder,
+    currentTurnIndex: 0,
+    bets: {},
+    pendingDraw: null,
+    discard: []
+  };
+  playerIds.forEach(id => {
+    updates[`players/${id}/medals`] = 4;
+    updates[`players/${id}/eliminated`] = false;
+    updates[`players/${id}/hand`] = deck.pop();
+  });
+  updates.kobayakawaCard = deck.pop();
+  updates.deck = deck;
+
+  await update(kRef(), updates);
+};
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ============================================================
+   初回参加登録（ゲストが自分のプレイヤー情報をまだ持っていない場合）
+============================================================ */
+(async () => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  if (!data) return;
+  const players = data.players || {};
+  if (!players[myPid] && myName) {
+    await update(kRef(), { [`players/${myPid}`]: { name: myName, medals: 4, hand: null, eliminated: false } });
+  }
+})();
+</script>
+</body>
+</html>
