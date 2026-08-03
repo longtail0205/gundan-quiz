@@ -14,6 +14,20 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .screen{display:none;animation:fadeIn 0.3s ease;}
 .screen.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes cardFlipIn{0%{transform:rotateY(90deg) scale(0.6);opacity:0;}60%{transform:rotateY(-10deg) scale(1.05);opacity:1;}100%{transform:rotateY(0) scale(1);opacity:1;}}
+@keyframes kbPulse{0%{box-shadow:0 0 0 rgba(255,215,0,0.6);transform:scale(1);}50%{box-shadow:0 0 40px rgba(255,215,0,0.8);transform:scale(1.08);}100%{box-shadow:0 0 20px rgba(255,215,0,0.4);transform:scale(1);}}
+@keyframes winnerGlow{0%,100%{box-shadow:0 0 10px rgba(255,215,0,0.3);}50%{box-shadow:0 0 30px rgba(255,215,0,0.9);}}
+@keyframes coinPop{0%{transform:scale(1);}30%{transform:scale(1.4) rotate(10deg);color:#ffe94d;}60%{transform:scale(0.9) rotate(-6deg);}100%{transform:scale(1) rotate(0);}}
+@keyframes shakeNo{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+@keyframes turnPulse{0%,100%{background:rgba(255,215,0,0.08);}50%{background:rgba(255,215,0,0.18);}}
+@keyframes revealSweep{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.card-flip{animation:cardFlipIn 0.55s cubic-bezier(0.34,1.56,0.64,1);}
+.kb-pulse{animation:kbPulse 0.6s ease;}
+.medal-pop{animation:coinPop 0.5s ease;display:inline-block;}
+.player-row.turn{animation:turnPulse 1.6s ease-in-out infinite;}
+.result-row.winner{animation:winnerGlow 1.4s ease-in-out infinite;}
+.medal-plus{color:var(--correct);font-weight:900;animation:coinPop 0.6s ease;}
+.medal-minus{color:var(--wrong);font-weight:900;animation:shakeNo 0.4s ease;}
 .title{font-family:'Dela Gothic One',sans-serif;font-size:clamp(26px,6vw,38px);color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.5),3px 3px 0 #114422;text-align:center;margin-bottom:8px;}
 .sub{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:24px;}
 .card{background:var(--bg-card);border:1.5px solid rgba(0,255,170,0.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
@@ -209,6 +223,30 @@ function showScreen(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+let _lastKbCard = null;
+function setKbCardDisplay(value) {
+  const el = document.getElementById('kb-card-number');
+  el.textContent = value != null ? value : '-';
+  if (value != null && value !== _lastKbCard) {
+    el.classList.remove('kb-pulse');
+    void el.offsetWidth; // reflow でアニメーション再トリガー
+    el.classList.add('kb-pulse');
+  }
+  _lastKbCard = value;
+}
+
+let _lastHandShown = {};
+function setHandDisplay(elId, value) {
+  const el = document.getElementById(elId);
+  el.textContent = value != null ? value : '-';
+  if (value != null && _lastHandShown[elId] !== value) {
+    el.classList.remove('card-flip');
+    void el.offsetWidth;
+    el.classList.add('card-flip');
+  }
+  _lastHandShown[elId] = value;
+}
+
 const kRef = () => ref(db, `rooms/${roomId}/kobayakawa`);
 
 /* ============================================================
@@ -250,7 +288,7 @@ function renderState(data) {
   // ゲーム進行中
   document.getElementById('round-label').textContent = `ラウンド ${data.round} / 7`;
   document.getElementById('pool-label').textContent  = `場：${data.pool}枚`;
-  document.getElementById('kb-card-number').textContent = data.kobayakawaCard != null ? data.kobayakawaCard : '-';
+  setKbCardDisplay(data.kobayakawaCard);
 
   renderGamePlayerList(data, players);
   renderDiscardPile(data.discard || []);
@@ -279,16 +317,24 @@ function renderWaitingScreen(players) {
   document.getElementById('guest-wait-area').style.display = isHost ? 'none' : 'block';
 }
 
+let _lastMedals = {};
 function renderGamePlayerList(data, players) {
   const turnOrder = data.turnOrder || [];
   const currentActorId = turnOrder[data.currentTurnIndex];
-  document.getElementById('game-player-list').innerHTML = Object.entries(players).map(([id, p]) => `
+  document.getElementById('game-player-list').innerHTML = Object.entries(players).map(([id, p]) => {
+    const prev = _lastMedals[id];
+    let medalClass = '';
+    if (prev !== undefined && prev !== p.medals) {
+      medalClass = p.medals > prev ? 'medal-plus' : 'medal-minus';
+    }
+    _lastMedals[id] = p.medals;
+    return `
     <div class="player-row ${id === currentActorId && data.status === 'action' ? 'turn' : ''} ${p.eliminated ? 'eliminated' : ''}">
       <div class="player-avatar">${p.name.charAt(0)}</div>
       <div class="player-name">${p.name}${p.eliminated ? '（脱落）' : ''}</div>
-      <div class="player-medals">${p.medals}枚</div>
-    </div>
-  `).join('');
+      <div class="player-medals ${medalClass}">${p.medals}枚</div>
+    </div>`;
+  }).join('');
 }
 
 function renderDiscardPile(discard) {
@@ -329,10 +375,10 @@ function handleActionPhase(data, players, myData) {
 
   if (currentActorId === myPid) {
     document.getElementById('action-my-turn-area').style.display = 'block';
-    document.getElementById('my-hand-number').textContent = myData.hand;
+    setHandDisplay('my-hand-number', myData.hand);
   } else {
     document.getElementById('action-waiting-area').style.display = 'block';
-    document.getElementById('my-hand-number-2').textContent = myData.hand;
+    setHandDisplay('my-hand-number-2', myData.hand);
     const actorName = (players[currentActorId] || {}).name || '？';
     document.getElementById('action-waiting-text').textContent = `${actorName} の手番です...`;
   }
@@ -423,7 +469,7 @@ function handleBetPhase(data, players, myData) {
   }
 
   document.getElementById('bet-area').style.display = 'block';
-  document.getElementById('my-hand-number-3').textContent = myData.hand;
+  setHandDisplay('my-hand-number-3', myData.hand);
 
   const myBetSubmitted = bets[myPid] !== undefined;
   document.getElementById('btn-bet-challenge').disabled = myBetSubmitted;
@@ -514,12 +560,15 @@ window.hostResolveRound = async () => {
 
 function renderRoundResult(data, players) {
   const lines = (data.lastResultText || '').split('\n').filter(l => l);
+  const winnerId = data.lastWinnerId;
   document.getElementById('round-result-content').innerHTML =
     `<div class="card-title">ラウンド ${data.round} の結果</div>` +
-    (lines.length ? lines.map(l => `<div class="result-row">${l}</div>`).join('') : '<div class="waiting-msg">動きはありませんでした</div>') +
+    (lines.length
+      ? lines.map((l, i) => `<div class="result-row card-flip ${l.includes('🏆') ? 'winner' : ''}" style="animation-delay:${i * 0.12}s;">${l}</div>`).join('')
+      : '<div class="waiting-msg">動きはありませんでした</div>') +
     `<div style="margin-top:16px;">` +
     Object.entries(players).map(([id, p]) => `
-      <div class="result-row ${p.eliminated ? 'folded' : ''}">
+      <div class="result-row ${p.eliminated ? 'folded' : ''} ${id === winnerId ? 'winner' : ''}">
         <div class="player-avatar">${p.name.charAt(0)}</div>
         <div class="player-name">${p.name}</div>
         <div class="player-medals">${p.medals}枚</div>
@@ -589,7 +638,7 @@ function renderFinalScreen(data, players) {
   const sorted = Object.entries(players).sort((a, b) => b[1].medals - a[1].medals);
   const ranks = ['🥇', '🥈', '🥉'];
   document.getElementById('final-result-content').innerHTML = sorted.map(([id, p], i) => `
-    <div class="result-row ${i === 0 ? 'winner' : ''}">
+    <div class="result-row card-flip ${i === 0 ? 'winner' : ''}" style="animation-delay:${i * 0.15}s;">
       <span style="font-size:20px;min-width:28px;">${ranks[i] || (i + 1)}</span>
       <div class="player-avatar">${p.name.charAt(0)}</div>
       <div class="player-name">${p.name}</div>
