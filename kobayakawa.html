@@ -78,7 +78,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div id="wait-player-list"></div>
   </div>
   <div id="host-start-area" style="display:none;">
-    <button class="btn btn-primary" onclick="hostStartGame()">▶ ゲーム開始（全7ラウンド）</button>
+    <div class="card">
+      <div class="card-title">ラウンド数を選ぶ</div>
+      <select id="round-count-select" style="width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(0,255,170,0.3);color:#fff;font-size:15px;">
+        <option value="3">3ラウンド</option>
+        <option value="5">5ラウンド</option>
+        <option value="7" selected>7ラウンド（標準）</option>
+        <option value="10">10ラウンド</option>
+        <option value="15">15ラウンド</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="hostStartGame()">▶ ゲーム開始</button>
   </div>
   <div id="guest-wait-area">
     <div class="waiting-msg">ホストの開始を待っています...</div>
@@ -145,13 +155,33 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="my-hand-number" id="my-hand-number-3">-</div>
     </div>
     <div class="card">
-      <div class="card-title" id="bet-title">勝負しますか？（メダル1枚を賭けます）</div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btn-bet-challenge" onclick="submitBet(true)">🔥 勝負する</button>
-        <button class="btn btn-red" id="btn-bet-fold" onclick="submitBet(false)">🏳️ 降りる</button>
+      <div class="card-title">勝負しますか？（賭けるメダル枚数を選んでください）</div>
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button class="btn btn-primary" id="btn-bet-1" onclick="submitBet(1)">1枚</button>
+        <button class="btn btn-primary" id="btn-bet-2" onclick="submitBet(2)">2枚</button>
+        <button class="btn btn-primary" id="btn-bet-3" onclick="submitBet(3)">3枚</button>
       </div>
+      <button class="btn btn-red" id="btn-bet-fold" onclick="submitBet(0)">🏳️ 降りる</button>
       <div id="bet-status" style="margin-top:12px;font-size:12px;color:var(--text-muted);"></div>
     </div>
+  </div>
+
+  <!-- 賭け金額の再確認フェーズ -->
+  <div id="bet-confirm-area" style="display:none;">
+    <div class="my-hand-display">
+      <div class="my-hand-label">あなたの手札</div>
+      <div class="my-hand-number" id="my-hand-number-4">-</div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="bet-confirm-title">他の人はもっと多く賭けています</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-confirm-match" onclick="submitBetConfirm(true)">同じ枚数で勝負する</button>
+        <button class="btn btn-red" onclick="submitBetConfirm(false)">🏳️ 降りる</button>
+      </div>
+    </div>
+  </div>
+  <div id="bet-confirm-waiting-area" style="display:none;">
+    <div class="waiting-msg">他のプレイヤーが賭け金額を確認しています...</div>
   </div>
 
   <!-- 捨て札一覧 -->
@@ -286,7 +316,7 @@ function renderState(data) {
   }
 
   // ゲーム進行中
-  document.getElementById('round-label').textContent = `ラウンド ${data.round} / 7`;
+  document.getElementById('round-label').textContent = `ラウンド ${data.round} / ${data.totalRounds || 7}`;
   document.getElementById('pool-label').textContent  = `場：${data.pool}枚`;
   setKbCardDisplay(data.kobayakawaCard);
 
@@ -299,6 +329,8 @@ function renderState(data) {
     handleActionPhase(data, players, myData);
   } else if (data.status === 'bet') {
     handleBetPhase(data, players, myData);
+  } else if (data.status === 'bet_confirm') {
+    handleBetConfirmPhase(data, players, myData);
   }
 
   showScreen('screen-game');
@@ -339,7 +371,10 @@ function renderGamePlayerList(data, players) {
 
 function renderDiscardPile(discard) {
   document.getElementById('discard-pile-list').innerHTML = discard.length
-    ? discard.map(n => `<span class="discard-chip">${n}</span>`).join('')
+    ? discard.map(d => {
+        const label = d.type === 'kobayakawa' ? '🔄小早川交換' : '🂠捨て札';
+        return `<span class="discard-chip">${d.name}：${d.value}（${label}）</span>`;
+      }).join('')
     : '<span style="font-size:12px;color:var(--text-muted);">まだありません</span>';
 }
 
@@ -357,6 +392,8 @@ function handleActionPhase(data, players, myData) {
   document.getElementById('action-discard-area').style.display = 'none';
   document.getElementById('action-waiting-area').style.display = 'none';
   document.getElementById('bet-area').style.display = 'none';
+  document.getElementById('bet-confirm-area').style.display = 'none';
+  document.getElementById('bet-confirm-waiting-area').style.display = 'none';
 
   if (myData.eliminated) {
     document.getElementById('action-waiting-area').style.display = 'block';
@@ -405,7 +442,10 @@ window.actionSwapKobayakawa = async () => {
   const drawnCard = deck[deck.length - 1];
   const newDeck   = deck.slice(0, -1);
   const oldKb = data.kobayakawaCard;
-  const newDiscard = (data.discard || []).concat(oldKb != null ? [oldKb] : []);
+  const myPlayerName = (data.players || {})[myPid].name;
+  const newDiscard = (data.discard || []).concat(
+    oldKb != null ? [{ value: oldKb, name: myPlayerName, type: 'kobayakawa' }] : []
+  );
   await update(kRef(), {
     deck: newDeck,
     kobayakawaCard: drawnCard,
@@ -424,7 +464,7 @@ window.discardCard = async (choiceIndex) => {
   const discarded = options[choiceIndex];
   const kept      = options[1 - choiceIndex];
 
-  const newDiscard = (data.discard || []).concat([discarded]);
+  const newDiscard = (data.discard || []).concat([{ value: discarded, name: myData.name, type: 'hand' }]);
   await update(kRef(), {
     [`players/${myPid}/hand`]: kept,
     discard: newDiscard,
@@ -454,6 +494,8 @@ function handleBetPhase(data, players, myData) {
   document.getElementById('action-my-turn-area').style.display = 'none';
   document.getElementById('action-discard-area').style.display = 'none';
   document.getElementById('action-waiting-area').style.display = 'none';
+  document.getElementById('bet-confirm-area').style.display = 'none';
+  document.getElementById('bet-confirm-waiting-area').style.display = 'none';
 
   document.getElementById('btn-host-resolve').style.display = 'none';
   document.getElementById('btn-host-next').style.display = 'none';
@@ -472,7 +514,10 @@ function handleBetPhase(data, players, myData) {
   setHandDisplay('my-hand-number-3', myData.hand);
 
   const myBetSubmitted = bets[myPid] !== undefined;
-  document.getElementById('btn-bet-challenge').disabled = myBetSubmitted;
+  [1,2,3].forEach(n => {
+    const btn = document.getElementById(`btn-bet-${n}`);
+    btn.disabled = myBetSubmitted || n > myData.medals;
+  });
   document.getElementById('btn-bet-fold').disabled = myBetSubmitted;
   document.getElementById('bet-status').textContent = myBetSubmitted
     ? '判定を待っています...'
@@ -480,11 +525,13 @@ function handleBetPhase(data, players, myData) {
 
   if (isHost && allSubmitted) {
     document.getElementById('btn-host-resolve').style.display = 'block';
+    document.getElementById('btn-host-resolve').textContent = '🎲 次へ進む';
+    document.getElementById('btn-host-resolve').onclick = hostResolveRound;
   }
 }
 
-window.submitBet = async (challenge) => {
-  await update(kRef(), { [`bets/${myPid}`]: challenge });
+window.submitBet = async (amount) => {
+  await update(kRef(), { [`bets/${myPid}`]: amount });
 };
 
 /* ============================================================
@@ -495,9 +542,90 @@ window.hostResolveRound = async () => {
   const data = snap.val();
   const players = data.players || {};
   const bets = data.bets || {};
-  const kbCard = data.kobayakawaCard;
 
-  const challengers = Object.keys(bets).filter(id => bets[id] === true);
+  const challengerIds = Object.keys(bets).filter(id => bets[id] > 0);
+
+  if (challengerIds.length >= 2) {
+    const maxBet = Math.max(...challengerIds.map(id => bets[id]));
+    // 最大額に満たない挑戦者がいれば確認フェーズへ
+    const needConfirmIds = challengerIds.filter(id => bets[id] < maxBet);
+    if (needConfirmIds.length > 0) {
+      await update(kRef(), {
+        status: 'bet_confirm',
+        maxBet,
+        confirmNeeded: needConfirmIds,
+        betConfirms: {}
+      });
+      return;
+    }
+  }
+
+  await resolveFinalBets(data, players, bets);
+};
+
+window.submitBetConfirm = async (match) => {
+  const snap = await get(kRef());
+  const data = snap.val();
+  await update(kRef(), { [`betConfirms/${myPid}`]: match });
+};
+
+function handleBetConfirmPhase(data, players, myData) {
+  document.getElementById('bet-area').style.display = 'none';
+  document.getElementById('btn-host-resolve').style.display = 'none';
+  document.getElementById('btn-host-next').style.display = 'none';
+  document.getElementById('btn-host-finish').style.display = 'none';
+
+  const needConfirmIds = data.confirmNeeded || [];
+  const betConfirms = data.betConfirms || {};
+
+  if (!needConfirmIds.includes(myPid)) {
+    document.getElementById('bet-confirm-area').style.display = 'none';
+    document.getElementById('bet-confirm-waiting-area').style.display = 'block';
+  } else {
+    const already = betConfirms[myPid] !== undefined;
+    document.getElementById('bet-confirm-area').style.display = already ? 'none' : 'block';
+    document.getElementById('bet-confirm-waiting-area').style.display = already ? 'block' : 'none';
+    setHandDisplay('my-hand-number-4', myData.hand);
+    // 持っているメダルが最大額より少ない場合は、持っている分で勝負できる
+    const myMax = Math.min(data.maxBet, myData.medals);
+    document.getElementById('bet-confirm-title').textContent = myMax < data.maxBet
+      ? `他の人は最大${data.maxBet}枚で勝負しています。あなたは${myMax}枚しか持っていないので、${myMax}枚全部で勝負しますか？`
+      : `他の人は最大${data.maxBet}枚で勝負しています。あなたも${data.maxBet}枚に合わせますか？`;
+    document.getElementById('btn-confirm-match').textContent = `${myMax}枚で勝負する`;
+    document.getElementById('btn-confirm-match').disabled = myMax <= 0;
+  }
+
+  const allAnswered = needConfirmIds.every(id => betConfirms[id] !== undefined);
+  if (isHost && allAnswered) {
+    document.getElementById('btn-host-resolve').style.display = 'block';
+    document.getElementById('btn-host-resolve').textContent = '🎲 勝負を判定する';
+    document.getElementById('btn-host-resolve').onclick = hostFinalizeConfirm;
+  }
+}
+
+async function hostFinalizeConfirm() {
+  const snap = await get(kRef());
+  const data = snap.val();
+  const players = data.players || {};
+  const bets = Object.assign({}, data.bets || {});
+  const betConfirms = data.betConfirms || {};
+  const maxBet = data.maxBet;
+
+  (data.confirmNeeded || []).forEach(id => {
+    if (betConfirms[id]) {
+      // 持っている枚数が足りなければ、持っている分だけ賭ける
+      bets[id] = Math.min(maxBet, players[id].medals);
+    } else {
+      bets[id] = 0;
+    }
+  });
+
+  await resolveFinalBets(data, players, bets);
+}
+
+async function resolveFinalBets(data, players, bets) {
+  const kbCard = data.kobayakawaCard;
+  const challengers = Object.keys(bets).filter(id => bets[id] > 0);
   let resultText = [];
   const updates = {};
   let pool = data.pool;
@@ -508,14 +636,15 @@ window.hostResolveRound = async () => {
     const winnerId = challengers[0];
     updates[`players/${winnerId}/medals`] = players[winnerId].medals + 1;
     pool = Math.max(0, pool - 1);
-    resultText.push(`${players[winnerId].name} だけが勝負に出たため、場から1枚獲得！`);
+    resultText.push(`${players[winnerId].name} だけが勝負に出たため、場から1枚獲得！（賭けた${bets[winnerId]}枚はそのまま）`);
   } else {
     // 複数人が勝負：カードを比較
-    const hands = challengers.map(id => ({ id, card: players[id].hand }));
+    const hands = challengers.map(id => ({ id, card: players[id].hand, bet: bets[id] }));
     const minCard = Math.min(...hands.map(h => h.card));
     const totals = hands.map(h => ({
       id: h.id,
       card: h.card,
+      bet: h.bet,
       total: h.card + (h.card === minCard ? kbCard : 0)
     }));
     const maxTotal = Math.max(...totals.map(t => t.total));
@@ -525,12 +654,12 @@ window.hostResolveRound = async () => {
     winners.sort((a, b) => turnOrder.indexOf(a.id) - turnOrder.indexOf(b.id));
     const winnerId = winners[0].id;
 
-    // 賭け金（挑戦者全員のメダル1枚ずつ）を集める
+    // 賭け金（挑戦者全員の賭けた枚数）を集める
     let potFromChallengers = 0;
     challengers.forEach(id => {
       if (id !== winnerId) {
-        updates[`players/${id}/medals`] = Math.max(0, players[id].medals - 1);
-        potFromChallengers++;
+        updates[`players/${id}/medals`] = Math.max(0, players[id].medals - bets[id]);
+        potFromChallengers += bets[id];
       }
     });
     const poolBonus = pool > 0 ? 1 : 0;
@@ -540,23 +669,21 @@ window.hostResolveRound = async () => {
     resultText = totals.map(t => {
       const bonusText = t.card === minCard ? `（小早川+${kbCard} → 合計${t.total}）` : `（合計${t.total}）`;
       const winMark = t.id === winnerId ? ' 🏆勝利！' : '';
-      return `${players[t.id].name}：${t.card}${bonusText}${winMark}`;
+      return `${players[t.id].name}：${t.card}${bonusText} [${t.bet}枚賭け]${winMark}`;
     });
   }
 
-  // 脱落判定
-  Object.entries(players).forEach(([id, p]) => {
-    const newMedals = updates[`players/${id}/medals`] !== undefined ? updates[`players/${id}/medals`] : p.medals;
-    if (newMedals <= 0) updates[`players/${id}/eliminated`] = true;
-  });
-
+  // 0枚になっても脱落はさせない（次ラウンド開始時に1枚配布されて復活する）
   updates.pool = pool;
   updates.status = 'round_result';
   updates.lastResultText = resultText.join('\n');
   updates.lastWinnerId = challengers.length > 0 ? (challengers.length === 1 ? challengers[0] : null) : null;
+  updates.confirmNeeded = null;
+  updates.betConfirms = null;
+  updates.maxBet = null;
 
   await update(kRef(), updates);
-};
+}
 
 function renderRoundResult(data, players) {
   const lines = (data.lastResultText || '').split('\n').filter(l => l);
@@ -584,8 +711,9 @@ window.hostBackToGameFromResult = async () => {
   const data = snap.val();
   const players = data.players || {};
   const activePlayers = Object.entries(players).filter(([id, p]) => !p.eliminated);
+  const totalRounds = data.totalRounds || 7;
 
-  if (data.round >= 7 || activePlayers.length <= 1) {
+  if (data.round >= totalRounds || activePlayers.length <= 1) {
     await update(kRef(), { status: 'finished' });
     return;
   }
@@ -612,15 +740,17 @@ async function startNewRound(data, players) {
   if (deck.length < activeIds.length + 2) {
     let fresh = [];
     for (let n = 1; n <= 15; n++) if (!usedCards.includes(n)) fresh.push(n);
-    deck = shuffle(fresh.concat(discard));
+    const discardValues = discard.map(d => (typeof d === 'object' ? d.value : d));
+    deck = shuffle(fresh.concat(discardValues));
     discard = [];
   }
 
-  // 各プレイヤーに新しい手札を配る（前のラウンドの手札はそのまま維持、というルールではなく毎ラウンド配り直す簡易仕様）
+  // 各プレイヤーに新しい手札を配る＋ラウンド開始時に1枚メダルを追加
   const updates = { round: data.round + 1, status: 'action', currentTurnIndex: 0, turnOrder, bets: {}, pendingDraw: null };
   activeIds.forEach(id => {
     const card = deck.pop();
     updates[`players/${id}/hand`] = card;
+    updates[`players/${id}/medals`] = players[id].medals + 1;
   });
   const kbNew = deck.pop();
   updates.kobayakawaCard = kbNew;
@@ -658,6 +788,7 @@ window.hostStartGame = async () => {
 
   if (playerIds.length < 2) { alert('参加者が足りません'); return; }
 
+  const totalRounds = parseInt(document.getElementById('round-count-select').value, 10) || 7;
   const pool = 8;
   const turnOrder = shuffle(playerIds.slice());
 
@@ -668,6 +799,7 @@ window.hostStartGame = async () => {
   const updates = {
     status: 'action',
     round: 1,
+    totalRounds,
     pool,
     turnOrder,
     currentTurnIndex: 0,
