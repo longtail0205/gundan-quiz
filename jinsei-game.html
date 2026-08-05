@@ -103,6 +103,11 @@
     max-width:420px;
   }
   .panel-title{font-family:"Noto Sans JP",sans-serif;font-size:11px;color:var(--yellow);margin-bottom:10px;}
+  .panel-close{
+    display:block;width:100%;background:var(--red);color:#fff;border:none;border-radius:8px;
+    padding:10px 12px;margin-bottom:12px;font-size:13px;font-weight:900;cursor:pointer;
+    box-shadow:0 3px 8px rgba(0,0,0,.35);
+  }
   .status-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);}
   .status-row.cur{color:var(--yellow);font-weight:700;}
   .status-row .dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
@@ -272,6 +277,7 @@
 <body>
 <h1 class="logo">🎰 パチンカス人生</h1>
 <p class="subtitle-text">～負けるが人生・出玉が全て～</p>
+<p style="font-size:9px;color:#555;text-align:center;margin:2px 0 0;">build: 2026-08-05-B</p>
 
 <div id="title">
   <p class="subtitle-text">何人で沼に沈む？</p>
@@ -805,6 +811,7 @@ let totalWidth3D = 0;
 let cameraX = 0, cameraTargetX = 0;
 
 function initThree(){
+  console.log('%c[jinsei-game build check]', 'color:#FFD23F;font-weight:bold;', 'BUILD_TAG_2026-08-05-B');
   canvasEl = document.getElementById('gameCanvas');
   renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias:true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
@@ -1232,9 +1239,11 @@ window.setTab = function(tab){
 };
 function renderActivePanelContent(){
   const panel = document.getElementById('sidePanel');
-  if(activeTab==='status') panel.innerHTML = buildStatusHtml();
-  if(activeTab==='map') panel.innerHTML = buildMiniMapHtml();
-  if(activeTab==='other') panel.innerHTML = buildOtherHtml();
+  let inner = '';
+  if(activeTab==='status') inner = buildStatusHtml();
+  if(activeTab==='map') inner = buildMiniMapHtml();
+  if(activeTab==='other') inner = buildOtherHtml();
+  panel.innerHTML = '<button class="panel-close" onclick="setTab(\'roulette\')">✕ 閉じる</button>' + inner;
 }
 function refreshSidePanel(){
   if(activeTab==='roulette') return;
