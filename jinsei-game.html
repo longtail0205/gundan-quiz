@@ -810,7 +810,7 @@ function initThree(){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
 
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(DAY_SKY.getHex(), 24, 90);
+  scene.fog = new THREE.Fog(DAY_SKY.getHex(), 18, 70);
 
   camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
 
@@ -822,24 +822,51 @@ function initThree(){
   fillLight.position.set(-10, 14, -8);
   scene.add(fillLight);
 
-  // city street ground
+  // city street: grass base -> sidewalks -> asphalt road with lane markings
   totalWidth3D = (TOTAL-1)*SPACING;
-  const groundGeo = new THREE.PlaneGeometry(totalWidth3D+60, 60);
-  const groundMat = new THREE.MeshStandardMaterial({ color:0x4a4a5e, roughness:0.95 });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
-  ground.rotation.x = -Math.PI/2;
-  ground.position.set(totalWidth3D/2, -0.15, 0);
-  scene.add(ground);
-  // sidewalk strip either side of the play path
-  [-2.6, 2.6].forEach(offset=>{
+  const grassGeo = new THREE.PlaneGeometry(totalWidth3D+80, 80);
+  const grassMat = new THREE.MeshStandardMaterial({ color:0x5fae4a, roughness:0.95 });
+  const grass = new THREE.Mesh(grassGeo, grassMat);
+  grass.rotation.x = -Math.PI/2;
+  grass.position.set(totalWidth3D/2, -0.17, 0);
+  scene.add(grass);
+
+  const roadGeo = new THREE.PlaneGeometry(totalWidth3D+60, 6.4);
+  const roadMat = new THREE.MeshStandardMaterial({ color:0x3d3d4a, roughness:0.9 });
+  const road = new THREE.Mesh(roadGeo, roadMat);
+  road.rotation.x = -Math.PI/2;
+  road.position.set(totalWidth3D/2, -0.15, 0);
+  scene.add(road);
+
+  [-3.5, 3.5].forEach(offset=>{
     const sw = new THREE.Mesh(
-      new THREE.PlaneGeometry(totalWidth3D+60, 1.6),
-      new THREE.MeshStandardMaterial({ color:0x8d8da0, roughness:0.9 })
+      new THREE.PlaneGeometry(totalWidth3D+60, 1.0),
+      new THREE.MeshStandardMaterial({ color:0x9d9dab, roughness:0.9 })
     );
     sw.rotation.x = -Math.PI/2;
-    sw.position.set(totalWidth3D/2, -0.13, offset);
+    sw.position.set(totalWidth3D/2, -0.14, offset);
     scene.add(sw);
   });
+
+  // lane markings
+  [-2.6, 2.6].forEach(z=>{
+    const line = new THREE.Mesh(
+      new THREE.PlaneGeometry(totalWidth3D+60, 0.15),
+      new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.6 })
+    );
+    line.rotation.x = -Math.PI/2;
+    line.position.set(totalWidth3D/2, -0.13, z);
+    scene.add(line);
+  });
+  for(let x=-10; x<totalWidth3D+10; x+=3){
+    const dash = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.4, 0.16),
+      new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.6 })
+    );
+    dash.rotation.x = -Math.PI/2;
+    dash.position.set(x, -0.13, 0);
+    scene.add(dash);
+  }
 
   playerGroup = new THREE.Group();
   scene.add(playerGroup);
@@ -862,10 +889,10 @@ function resizeCanvas(){
 function animate(time){
   requestAnimationFrame(animate);
 
-  // smooth camera dolly toward the active player -- overhead board-game view looking down at the street
+  // smooth camera dolly toward the active player -- close chase-cam, following just behind and above
   cameraX += (cameraTargetX - cameraX) * 0.07;
-  camera.position.set(cameraX - 2.5, 17, 13);
-  camera.lookAt(cameraX + 2, 0, 0);
+  camera.position.set(cameraX - 2.2, 4.2, 5.5);
+  camera.lookAt(cameraX + 5, 0.3, 0);
 
   // day -> dusk -> night sky based on progress along the board
   const frac = Math.min(1, Math.max(0, cameraX / Math.max(1,totalWidth3D)));
@@ -908,8 +935,31 @@ function addSunMoon(){
   moon.position.set(totalWidth3D+6, 14, -20);
   scene.add(moon);
 }
+function addStreetTree(x, z, scale){
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.11, 0.55, 6),
+    new THREE.MeshStandardMaterial({ color:0x6b4a2f, roughness:0.9 })
+  );
+  trunk.position.y = 0.27;
+  g.add(trunk);
+  const foliage = new THREE.Mesh(
+    new THREE.SphereGeometry(0.55, 8, 6),
+    new THREE.MeshStandardMaterial({ color:0x4caf50, roughness:0.85 })
+  );
+  foliage.position.y = 0.95;
+  g.add(foliage);
+  g.position.set(x, 0, z);
+  g.scale.setScalar(scale);
+  scene.add(g);
+}
 function buildDecorSync(){
   addSunMoon();
+  // street trees lining the sidewalks
+  for(let x=-4; x<totalWidth3D+4; x+=4.6){
+    addStreetTree(x, 4.1, 0.9+((x*3)%6)/20);
+    addStreetTree(x+2.3, -4.1, 0.9+((x*5)%6)/20);
+  }
 }
 
 /* ---------- Kenney glTF building models (City Kit: Commercial) ---------- */
@@ -1020,16 +1070,18 @@ function buildBuildingInstances(){
   const midKeys   = ['mid','mid2','filler'];
   const lateKeys  = ['late','late2','late3'];
 
-  // two lanes each side, packed tight with no gaps -- a real street canyon, tuned for performance
-  const lanes = [2.2, -2.2, 4.0, -4.0];
+  // buildings sit beyond the sidewalk/trees (|z|>4), one main row + a set-back second row
+  const lanes = [5.2, -5.2, 7.6, -7.6];
   let counter = 0;
-  for(let bx=1.2; bx<totalWidth3D-1.2; bx+=2.4){
+  for(let bx=1.2; bx<totalWidth3D-1.2; bx+=3.6){
     const frac = bx/totalWidth3D;
     const pool = frac<0.33 ? earlyKeys : frac<0.66 ? midKeys : lateKeys;
     lanes.forEach((z, li)=>{
+      const isBackRow = li >= 2;
+      if(isBackRow && (counter + li) % 2 !== 0) return; // back row: sparser
       const key = pool[(counter + li) % pool.length];
-      const jitter = ((bx*7 + li*13) % 10) / 10 - 0.5; // -0.5..0.5, small variation only
-      placeBuildingModel(key, bx + jitter*0.3, z);
+      const jitter = ((bx*7 + li*13) % 10) / 10 - 0.5;
+      placeBuildingModel(key, bx + jitter*0.8, z + jitter*0.6);
     });
     counter++;
   }
