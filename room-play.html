@@ -1304,7 +1304,7 @@ if (urlName)   document.getElementById('input-name').value    = urlName;
     document.getElementById('play-room-badge').textContent  = `ROOM: ${roomId}`;
     document.getElementById('play-name-badge').textContent  = playerName;
     document.getElementById('play-room-id-bar').textContent = `ROOM: ${roomId}`;
-    listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard(); listenKobayakawaStart();
+    listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard(); listenKobayakawaStart(); listenJinseiStart();
     showScreen('screen-waiting');
   } catch(e) {}
 })();
@@ -1328,7 +1328,7 @@ window.joinRoom = async () => {
   document.getElementById('play-room-badge').textContent  = `ROOM: ${roomId}`;
   document.getElementById('play-name-badge').textContent  = playerName;
   document.getElementById('play-room-id-bar').textContent = `ROOM: ${roomId}`;
-  listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard(); listenKobayakawaStart();
+  listenQuestion(); listenHostTransfer(); listenRoomStatus(); listenPointBoard(); listenKobayakawaStart(); listenJinseiStart();
   showScreen('screen-waiting');
 };
 
@@ -1544,6 +1544,21 @@ function listenKobayakawaStart() {
     _kobayakawaPrompted = true;
     if (confirm('🃏 小早川が始まりました！\n参加しますか？')) {
       const url = `${location.origin}${location.pathname.replace('room-play.html', 'kobayakawa.html')}?room=${roomId}&pid=${playerId}&name=${encodeURIComponent(playerName)}`;
+      location.href = url;
+    }
+  });
+}
+
+let _jinseiPrompted = false;
+function listenJinseiStart() {
+  const jRef = ref(db, `rooms/${roomId}/jinsei/status`);
+  onValue(jRef, snap => {
+    const status = snap.val();
+    if (!status || _jinseiPrompted) return;
+    if (location.pathname.includes('jinsei-game.html')) return;
+    _jinseiPrompted = true;
+    if (confirm('🎰 人生ゲームが始まりました！\n参加しますか？')) {
+      const url = `${location.origin}${location.pathname.replace('room-play.html', 'jinsei-game.html')}?room=${roomId}&pid=${playerId}&name=${encodeURIComponent(playerName)}`;
       location.href = url;
     }
   });

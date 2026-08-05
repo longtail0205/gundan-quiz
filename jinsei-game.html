@@ -301,10 +301,10 @@
 <p style="font-size:9px;color:#555;text-align:center;margin:2px 0 0;">build: 2026-08-05-D</p>
 
 <div id="title">
-  <p class="subtitle-text">何人で沼に沈む？</p>
-  <div class="count-row" id="countRow"></div>
-  <div class="name-inputs" id="nameInputs"></div>
-  <button class="start-btn" id="startBtn">実戦スタート</button>
+  <p class="subtitle-text">参加者</p>
+  <div id="waitPlayerList" style="margin:14px 0;display:flex;flex-direction:column;gap:8px;"></div>
+  <button class="start-btn" id="startBtn" style="display:none;">実戦スタート</button>
+  <p id="waitMsg" class="subtitle-text" style="margin-top:10px;">ホストの開始を待っています...</p>
 </div>
 
 <div id="game">
@@ -313,6 +313,7 @@
     <div id="playerLabels" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
 
     <div class="top-panel" id="topPanel"></div>
+    <div id="spectatorBanner" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(255,215,0,0.15);border:1.5px solid rgba(255,215,0,0.5);border-radius:50px;padding:8px 18px;font-size:12px;font-weight:900;color:#FFD23F;white-space:nowrap;"></div>
     <div class="side-menu" id="sideMenu">
       <button data-tab="roulette" class="active" onclick="setTab('roulette')">🎯 ルーレット</button>
       <button data-tab="status" onclick="setTab('status')">📋 ステータス</button>
@@ -339,6 +340,46 @@
 <div id="dialogueOverlay">
   <div id="dialogueBox"></div>
 </div>
+
+<!-- Firebase接続（オンライン同期用） -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDISToSZkNspKlZyHmQ2LGrdFFXlEUUEjU",
+  authDomain: "gundan-quiz.firebaseapp.com",
+  databaseURL: "https://gundan-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gundan-quiz",
+  storageBucket: "gundan-quiz.firebasestorage.app",
+  messagingSenderId: "1033936435467",
+  appId: "1:1033936435467:web:81650f44cb5e6a093aca0e"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const urlParams = new URLSearchParams(location.search);
+const roomId  = urlParams.get('room');
+const myPid   = urlParams.get('pid');
+const myName  = urlParams.get('name');
+const isHost  = urlParams.get('host') === '1';
+
+if (!roomId || !myPid) {
+  document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#fff;">不正なアクセスです。room-host.htmlから「人生ゲームをプレイする」を押してください。</div>';
+  throw new Error('missing params');
+}
+
+// 非moduleスクリプト（メインゲームロジック）から呼べるように window に公開
+window.__jinseiFirebase = {
+  db, roomId, myPid, myName, isHost,
+  jRef: () => ref(db, `rooms/${roomId}/jinsei`),
+  fbSet: (path, value) => set(ref(db, `rooms/${roomId}/jinsei/${path}`), value),
+  fbUpdate: (updates) => update(ref(db, `rooms/${roomId}/jinsei`), updates),
+  fbGet: async (path) => (await get(ref(db, `rooms/${roomId}/jinsei/${path || ''}`))).val(),
+  onJinseiChange: (cb) => onValue(ref(db, `rooms/${roomId}/jinsei`), snap => cb(snap.val()))
+};
+window.dispatchEvent(new Event('jinseiFirebaseReady'));
+</script>
 
 <script>
 /* ================= SOUND ================= */
@@ -726,53 +767,148 @@ function makeSpriteEl(color, size){
   return el;
 }
 
-/* ================= TITLE SCREEN ================= */
-const countRow = document.getElementById('countRow');
-const nameInputs = document.getElementById('nameInputs');
-let selectedCount = 2;
-function renderCountButtons(){
-  countRow.innerHTML='';
-  [2,3,4,5,6].forEach(n=>{
-    const b=document.createElement('button');
-    b.className='pbtn'+(n===selectedCount?' selected':'');
-    b.textContent=n;
-    b.onclick=()=>{ sndClick(); selectedCount=n; renderCountButtons(); renderNameInputs(); };
-    countRow.appendChild(b);
+/* ================= TITLE SCREEN（オンライン待機室） ================= */
+let FB = null; // window.__jinseiFirebaseがセットされたら入る
+let gameStarted = false;
+
+function initOnlineFlow() {
+  FB = window.__jinseiFirebase;
+
+  FB.onJinseiChange(async (data) => {
+    if (!data) return;
+
+    if (data.status === 'waiting') {
+      renderWaitList(data.players || {});
+      // 自分がまだ登録されていなければ登録する
+      if (!(data.players && data.players[FB.myPid]) && FB.myName) {
+        await FB.fbSet(`players/${FB.myPid}`, { name: FB.myName, joined: true });
+      }
+      return;
+    }
+
+    if (data.status === 'playing' && !gameStarted) {
+      gameStarted = true;
+      startLocalGameFromFirebase(data);
+    }
+
+    if (data.status === 'playing' && gameStarted) {
+      syncFromFirebase(data);
+    }
   });
 }
-function renderNameInputs(){
-  nameInputs.innerHTML='';
-  for(let i=0;i<selectedCount;i++){
-    const row=document.createElement('div');
-    row.className='name-row';
-    const sq=document.createElement('div');
-    sq.className='avatar-sq'; sq.style.background=COLORS[i];
-    const inp=document.createElement('input');
-    inp.placeholder=`プレイヤー${i+1}の名前`; inp.id=`nameInput${i}`;
-    row.appendChild(sq); row.appendChild(inp);
-    nameInputs.appendChild(row);
-  }
-}
-renderCountButtons(); renderNameInputs();
 
-document.getElementById('startBtn').onclick = ()=>{
+function renderWaitList(playersObj) {
+  const listEl = document.getElementById('waitPlayerList');
+  const entries = Object.entries(playersObj);
+  listEl.innerHTML = entries.map(([id, p], i) => `
+    <div class="name-row">
+      <div class="avatar-sq" style="background:${COLORS[i % COLORS.length]}"></div>
+      <div style="flex:1;text-align:left;padding:8px 10px;">${p.name}</div>
+    </div>
+  `).join('') || '<div class="subtitle-text">参加者を待っています...</div>';
+
+  document.getElementById('startBtn').style.display = FB.isHost && entries.length >= 1 ? 'block' : 'none';
+  document.getElementById('waitMsg').style.display  = FB.isHost ? 'none' : 'block';
+}
+
+document.getElementById('startBtn').onclick = async () => {
   ensureCtx(); sndFanfare();
-  players=[];
-  for(let i=0;i<selectedCount;i++){
-    const val=document.getElementById(`nameInput${i}`).value.trim();
-    players.push({
-      name:val||`プレイヤー${i+1}`, color:COLORS[i], money:10, pos:0,
-      job:'軍団員', finished:false, branchChoices:{},
-      shopVisual:null, shopAwaitingRound2:false, shopBranchesDone:new Set()
-    });
+  const snap = await FB.fbGet('players');
+  const entries = Object.entries(snap || {});
+  const turnOrder = entries.map(([id]) => id);
+  const initPlayers = {};
+  entries.forEach(([id, p], i) => {
+    initPlayers[id] = {
+      name: p.name, color: COLORS[i % COLORS.length], money: 10, pos: 0,
+      job: '軍団員', finished: false, branchChoices: {},
+      shopVisual: null, shopAwaitingRound2: false, shopBranchesDone: []
+    };
+  });
+  await FB.fbUpdate({
+    status: 'playing',
+    turnOrder,
+    currentTurnIndex: 0,
+    players: initPlayers
+  });
+};
+
+/* Firebaseのplayersオブジェクト+turnOrderから、既存コードが使うローカル配列players/currentIdxを再構築 */
+function rebuildLocalPlayers(data) {
+  const turnOrder = data.turnOrder || [];
+  players = turnOrder.map(id => {
+    const p = data.players[id] || {};
+    return {
+      id,
+      name: p.name, color: p.color, money: p.money, pos: p.pos,
+      job: p.job, finished: !!p.finished, branchChoices: p.branchChoices || {},
+      shopVisual: p.shopVisual || null, shopAwaitingRound2: !!p.shopAwaitingRound2,
+      shopBranchesDone: p.shopBranchesDone || []
+    };
+  });
+  currentIdx = data.currentTurnIndex || 0;
+}
+
+function isMyTurn() {
+  return players.length > 0 && players[currentIdx] && players[currentIdx].id === FB.myPid;
+}
+
+function updateSpectatorBanner() {
+  const banner = document.getElementById('spectatorBanner');
+  if (!players[currentIdx]) { banner.style.display = 'none'; return; }
+  if (isMyTurn()) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'block';
+    banner.textContent = `👀 ${players[currentIdx].name} の番です（観戦中）`;
   }
-  currentIdx=0;
-  document.getElementById('title').style.display='none';
-  document.getElementById('game').style.display='flex';
-  activeTab='roulette';
+  spinBtn.disabled = !isMyTurn() || spinning;
+}
+
+function startLocalGameFromFirebase(data) {
+  rebuildLocalPlayers(data);
+  document.getElementById('title').style.display = 'none';
+  document.getElementById('game').style.display = 'flex';
+  activeTab = 'roulette';
   setupPlayerLabels();
   renderTopPanel(); renderMap(); scrollToActive();
-};
+  updateSpectatorBanner();
+}
+
+/* Firebaseからの更新を受けて、観戦者側の表示を最新化する（自分の番のときは自分の操作を優先しローカル更新を上書きしない） */
+function syncFromFirebase(data) {
+  if (isMyTurn()) { updateSpectatorBanner(); return; } // 自分の番の間はローカル操作が正
+  rebuildLocalPlayers(data);
+  renderTopPanel(); renderMap(); refreshSidePanel(); scrollToActive();
+  updateSpectatorBanner();
+
+  if (players.every(pl => pl.finished)) { showFinalResult(); }
+}
+
+/* 自分の番の操作が終わった時点（finishTurn直前）でFirebaseに反映する */
+async function pushStateToFirebase(advanceTurn) {
+  if (!FB) return;
+  const me = players[currentIdx];
+  const updates = {};
+  players.forEach(p => {
+    updates[`players/${p.id}/money`] = p.money;
+    updates[`players/${p.id}/pos`] = p.pos;
+    updates[`players/${p.id}/job`] = p.job;
+    updates[`players/${p.id}/finished`] = p.finished;
+    updates[`players/${p.id}/branchChoices`] = p.branchChoices;
+    updates[`players/${p.id}/shopVisual`] = p.shopVisual;
+    updates[`players/${p.id}/shopAwaitingRound2`] = p.shopAwaitingRound2;
+    updates[`players/${p.id}/shopBranchesDone`] = p.shopBranchesDone;
+  });
+  if (advanceTurn) {
+    let nextIdx = currentIdx;
+    do { nextIdx = (nextIdx + 1) % players.length; } while (players[nextIdx].finished && players.some(pl => !pl.finished));
+    updates.currentTurnIndex = nextIdx;
+  }
+  await FB.fbUpdate(updates);
+}
+
+window.addEventListener('jinseiFirebaseReady', initOnlineFlow);
+if (window.__jinseiFirebase) initOnlineFlow();
 
 /* ================= MAP RENDER (3D, Three.js) ================= */
 const IS_MOBILE = window.innerWidth < 640;
@@ -1440,6 +1576,7 @@ function spinReel(onDone){
 
 spinBtn.onclick = ()=>{
   if(spinning) return;
+  if(FB && !isMyTurn()) return; // 自分の番でなければ何もしない
   const cur = players[currentIdx];
   if(cur && cur.shopAwaitingRound2){
     sndClick();
@@ -1799,15 +1936,23 @@ window.shopForkChoice = function(visit){
   startShopRound(p, idx, fork.bet, fork.occurrence, false);
 };
 
-function finishTurn(){
+async function finishTurn(){
   renderTopPanel(); renderMap();
   spinBtn.disabled=false; spinning=false;
   document.getElementById('sideMenu').style.display='flex';
   if(activeTab==='roulette') document.getElementById('arcadePanel').style.display='flex';
 
-  if(players.every(pl=>pl.finished)){ showFinalResult(); return; }
+  const allFinished = players.every(pl=>pl.finished);
+
+  if (FB && isMyTurn()) {
+    await pushStateToFirebase(!allFinished);
+    if (allFinished) { await FB.fbUpdate({ status: 'finished' }); }
+  }
+
+  if(allFinished){ showFinalResult(); return; }
   do{ currentIdx = (currentIdx+1)%players.length; } while(players[currentIdx].finished);
   renderTopPanel(); scrollToActive();
+  updateSpectatorBanner();
 }
 
 /* ================= RESULT ================= */

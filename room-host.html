@@ -205,6 +205,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <button class="btn btn-gold" onclick="showHostTransfer()">👑 ホストを交代</button>
   </div>
   <button class="btn" style="width:100%;margin-top:10px;background:linear-gradient(135deg,rgba(0,80,40,0.3),rgba(0,40,20,0.3));border:1.5px solid rgba(0,200,100,0.5);color:#66ffaa;border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.05em;" onclick="startKobayakawa()">🃏 小早川をプレイする</button>
+  <button class="btn" style="width:100%;margin-top:10px;background:linear-gradient(135deg,rgba(255,150,0,0.25),rgba(150,60,0,0.25));border:1.5px solid rgba(255,150,0,0.5);color:#ffcc66;border-radius:50px;padding:12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.05em;" onclick="startJinseiGame()">🎰 人生ゲームをプレイする</button>
 </div>
 
 <!-- ホスト交代 -->
@@ -668,6 +669,27 @@ window.startKobayakawa = async () => {
   });
 
   const url = `${location.origin}${location.pathname.replace('room-host.html', 'kobayakawa.html')}?room=${roomId}&pid=HOST_K&host=1`;
+  location.href = url;
+};
+
+/* 人生ゲームを開始 */
+window.startJinseiGame = async () => {
+  const snap = await get(ref(db, `rooms/${roomId}/players`));
+  const players = snap.val() || {};
+  const playerCount = Object.keys(players).length;
+  if (playerCount < 1) { alert('参加者が最低1人必要です'); return; }
+
+  const hostName = window._hostName || 'ホスト';
+  await set(ref(db, `rooms/${roomId}/jinsei`), {
+    status: 'waiting',
+    createdAt: Date.now(),
+    players: Object.assign(
+      { HOST_J: { name: hostName + '（ホスト）', joined: true } },
+      Object.fromEntries(Object.entries(players).map(([id, p]) => [id, { name: p.name, joined: true }]))
+    )
+  });
+
+  const url = `${location.origin}${location.pathname.replace('room-host.html', 'jinsei-game.html')}?room=${roomId}&pid=HOST_J&host=1`;
   location.href = url;
 };
 
