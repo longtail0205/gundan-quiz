@@ -13,6 +13,7 @@
   window.createImageBitmap = undefined;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
   :root{
     --bg-deep:#101425;
@@ -90,7 +91,18 @@
     border-radius:14px;padding:10px 14px;min-width:170px;box-shadow:0 4px 10px rgba(0,0,0,.4);
   }
   .tp-row{display:flex;align-items:center;gap:10px;}
-  .tp-avatar{width:28px;height:28px;overflow:hidden;position:relative;flex-shrink:0;margin-top:-4px;margin-left:-4px;}
+  .tp-avatar{width:28px;height:32px;flex-shrink:0;}
+  .token-icon{position:relative;width:28px;height:32px;}
+  .token-icon-body{
+    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;
+    border-bottom:18px solid var(--pcolor);
+  }
+  .token-icon-head{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:11px;height:11px;border-radius:50%;background:var(--pcolor);
+    box-shadow:0 0 0 1.5px rgba(0,0,0,.35);
+  }
   .tp-name{font-size:12px;font-weight:900;}
   .tp-job{font-size:9px;color:var(--cyan);}
   .tp-money{margin-top:6px;font-size:20px;font-weight:900;color:var(--yellow);font-family:"Noto Sans JP",sans-serif;}
@@ -286,7 +298,7 @@
 <body>
 <h1 class="logo">🎰 パチンカス人生</h1>
 <p class="subtitle-text">～負けるが人生・出玉が全て～</p>
-<p style="font-size:9px;color:#555;text-align:center;margin:2px 0 0;">build: 2026-08-05-C</p>
+<p style="font-size:9px;color:#555;text-align:center;margin:2px 0 0;">build: 2026-08-05-D</p>
 
 <div id="title">
   <p class="subtitle-text">何人で沼に沈む？</p>
@@ -819,10 +831,12 @@ let pulseGroup = [];   // meshes that gently bob/pulse (branch/payday/shopfork m
 let playerGroup;       // THREE.Group holding current player pieces
 let boardBuilt = false;
 let totalWidth3D = 0;
-let cameraX = 0, cameraTargetX = 0;
+let cameraX = 0, cameraZ = 0, cameraTargetX = 0, cameraTargetZ = 0;
+let orbitControls = null;
+let freeLookActive = false;
 
 function initThree(){
-  console.log('%c[jinsei-game build check]', 'color:#FFD23F;font-weight:bold;', 'BUILD_TAG_2026-08-05-C');
+  console.log('%c[jinsei-game build check]', 'color:#FFD23F;font-weight:bold;', 'BUILD_TAG_2026-08-05-D');
   canvasEl = document.getElementById('gameCanvas');
   renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias:true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
@@ -889,6 +903,13 @@ function initThree(){
   playerGroup = new THREE.Group();
   scene.add(playerGroup);
 
+  orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+  orbitControls.enableDamping = true;
+  orbitControls.dampingFactor = 0.12;
+  orbitControls.minDistance = 2;
+  orbitControls.maxDistance = 60;
+  orbitControls.enabled = false;
+
   buildDecorSync();
   loadBuildingModels(buildBuildingInstances);
   resizeCanvas();
@@ -907,10 +928,16 @@ function resizeCanvas(){
 function animate(time){
   requestAnimationFrame(animate);
 
-  // smooth camera dolly toward the active player -- close chase-cam, following just behind and above
   cameraX += (cameraTargetX - cameraX) * 0.07;
-  camera.position.set(cameraX - 2.2, 4.2, 5.5);
-  camera.lookAt(cameraX + 5, 0.3, 0);
+  cameraZ += (cameraTargetZ - cameraZ) * 0.07;
+
+  if(freeLookActive){
+    orbitControls.update();
+  } else {
+    // smooth camera dolly toward the active player -- close chase-cam, following just behind and above
+    camera.position.set(cameraX - 2.2, 4.2, cameraZ + 5.5);
+    camera.lookAt(cameraX + 5, 0.3, cameraZ);
+  }
 
   // day -> dusk -> night sky based on progress along the board
   const frac = Math.min(1, Math.max(0, cameraX / Math.max(1,totalWidth3D)));
@@ -1263,6 +1290,7 @@ function scrollToActive(){
   if(!p) return;
   const pos = getPlayerVisualPos(p);
   cameraTargetX = pos.x;
+  cameraTargetZ = pos.z;
 }
 
 /* ================= TOP PANEL + SIDE TABS ================= */
@@ -1282,7 +1310,11 @@ function renderTopPanel(){
     <div class="tp-money ${cur.money<0?'neg':''}">¥${cur.money.toFixed(1)}万</div>
     <div class="tp-others">${others.map(p=>`<span class="tp-mini" style="background:${p.color}"></span>`).join('')}</div>
   `;
-  document.getElementById('tpAvatar').appendChild(makeSpriteEl(cur.color,28));
+  document.getElementById('tpAvatar').innerHTML = `
+    <div class="token-icon" style="--pcolor:${cur.color}">
+      <div class="token-icon-body"></div>
+      <div class="token-icon-head"></div>
+    </div>`;
   spinBtn.textContent = cur.shopAwaitingRound2 ? 'もう一度挑戦する!' : 'レバーを叩く!';
   refreshSidePanel();
 }
@@ -1294,6 +1326,19 @@ window.setTab = function(tab){
   document.querySelectorAll('.side-menu button').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
   const panel = document.getElementById('sidePanel');
   const arcade = document.getElementById('arcadePanel');
+
+  if(tab==='map'){
+    freeLookActive = true;
+    if(orbitControls){
+      orbitControls.enabled = true;
+      orbitControls.target.set(cameraX+2, 0.6, cameraZ);
+      orbitControls.update();
+    }
+  } else {
+    freeLookActive = false;
+    if(orbitControls) orbitControls.enabled = false;
+  }
+
   if(tab==='roulette'){
     panel.style.display='none';
     arcade.style.display='flex';
@@ -1334,7 +1379,8 @@ function buildMiniMapHtml(){
   const markHtml = marks.map(m=>`<div class="mm-mark" style="left:${m.pct}%">${m.label}</div>`).join('');
   return `<div class="panel-title">🗺️ マップ全体</div>
     <div class="mm-bar">${markHtml}${dots}</div>
-    <div class="mm-note">現在の位置を％で表示しています</div>`;
+    <div class="mm-note">現在の位置を％で表示しています</div>
+    <div class="mm-note" style="margin-top:6px;">🕹️ 盤面をドラッグすると自由に視点を動かせます(ピンチで拡大縮小)</div>`;
 }
 function buildOtherHtml(){
   return `<div class="panel-title">⚙️ その他</div>
@@ -1408,6 +1454,7 @@ function movePlayer(steps){
   const p = players[currentIdx];
   let left = steps;
   document.getElementById('arcadePanel').style.display = 'none';
+  document.getElementById('sideMenu').style.display = 'none';
   countdownForPlayer = currentIdx;
   countdownEl.textContent = left;
   countdownEl.style.display = 'block';
@@ -1755,6 +1802,7 @@ window.shopForkChoice = function(visit){
 function finishTurn(){
   renderTopPanel(); renderMap();
   spinBtn.disabled=false; spinning=false;
+  document.getElementById('sideMenu').style.display='flex';
   if(activeTab==='roulette') document.getElementById('arcadePanel').style.display='flex';
 
   if(players.every(pl=>pl.finished)){ showFinalResult(); return; }
