@@ -787,6 +787,7 @@ function handleJinseiData(data) {
   if (data.status === 'playing' && !gameStarted) {
     gameStarted = true;
     _lastProcessedRollTs = data.lastRoll ? data.lastRoll.ts : 0;
+    _lastProcessedTurnIndex = data.currentTurnIndex;
     startLocalGameFromFirebase(data);
     return;
   }
@@ -899,6 +900,7 @@ function startLocalGameFromFirebase(data) {
 
 /* Firebaseからの更新を受けて、観戦者側の表示を最新化する（自分の番のときは自分の操作を優先しローカル更新を上書きしない） */
 let _lastProcessedRollTs = 0;
+let _lastProcessedTurnIndex = -1;
 function syncFromFirebase(data) {
   // サイコロを振った通知が新しければ、全員が同じ歩みアニメーションを再生する
   if (data.lastRoll && data.lastRoll.ts > _lastProcessedRollTs && !spinning) {
@@ -916,18 +918,26 @@ function syncFromFirebase(data) {
   }
 
   // ダイアログ（イベント文章）の通知が新しければ、観戦者はそのまま表示する
+  // ※ここで処理した回は、下の「ターン終了時の同期」を今回のスナップショットでは行わない
+  //   （同時に処理すると表示した直後に閉じてしまうため）
   if (data.lastDialogue && data.lastDialogue.ts > _lastProcessedDialogueTs && !isMyTurn()) {
     _lastProcessedDialogueTs = data.lastDialogue.ts;
     showSpectatorDialogue(data.lastDialogue.html, data.lastDialogue.text);
+    return;
   }
 
   if (isMyTurn()) { updateSpectatorBanner(); return; } // 自分の番の間はローカル操作が正
-  overlay.style.display = 'none'; // ターンが進んだので観戦者側のダイアログ表示を閉じる
-  rebuildLocalPlayers(data);
-  renderTopPanel(); renderMap(); refreshSidePanel(); scrollToActive();
-  updateSpectatorBanner();
 
-  if (players.every(pl => pl.finished)) { showFinalResult(); }
+  // 本当にターンが進んだ（次の人に交代した）ときだけ、オーバーレイを閉じて全体を再構築する
+  if (data.currentTurnIndex !== _lastProcessedTurnIndex) {
+    _lastProcessedTurnIndex = data.currentTurnIndex;
+    overlay.style.display = 'none';
+    rebuildLocalPlayers(data);
+    renderTopPanel(); renderMap(); refreshSidePanel(); scrollToActive();
+    updateSpectatorBanner();
+
+    if (players.every(pl => pl.finished)) { showFinalResult(); }
+  }
 }
 
 /* 自分の番の操作が終わった時点（finishTurn直前）でFirebaseに反映する */
