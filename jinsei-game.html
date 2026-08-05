@@ -951,6 +951,7 @@ function base64ToArrayBuffer(base64){
 }
 const BUILDING_SCALE = { filler:0.9, early:0.9, mid:0.85, late:0.6 };
 let buildingTemplates = {};
+let buildingBaseOffset = {};
 function loadBuildingModels(onDone){
   const keys = Object.keys(BUILDING_MODELS_B64);
   let remaining = keys.length;
@@ -960,6 +961,11 @@ function loadBuildingModels(onDone){
       const buf = base64ToArrayBuffer(BUILDING_MODELS_B64[key]);
       gltfLoaderInstance.parse(buf, '', (gltf)=>{
         buildingTemplates[key] = gltf.scene;
+        const box = new THREE.Box3().setFromObject(gltf.scene);
+        buildingBaseOffset[key] = -box.min.y;
+        const size = new THREE.Vector3(); box.getSize(size);
+        console.log('[building loaded]', key, 'size(x,y,z)=', size.x.toFixed(2), size.y.toFixed(2), size.z.toFixed(2),
+          'min.y=', box.min.y.toFixed(2), 'max.y=', box.max.y.toFixed(2));
         if(--remaining===0) onDone();
       }, (err)=>{
         console.error('glTF load failed:', key, err);
@@ -971,16 +977,23 @@ function loadBuildingModels(onDone){
     }
   });
 }
+let placedBuildingCount = 0;
 function placeBuildingModel(key, x, z){
   const template = buildingTemplates[key];
-  if(!template) return;
+  if(!template){ console.warn('[building missing template]', key); return; }
   const inst = template.clone(true);
   const scaleMul = BUILDING_SCALE[key] || 1;
   inst.scale.setScalar(scaleMul);
-  inst.position.set(x, 0, z);
+  const baseOffset = (buildingBaseOffset[key] || 0) * scaleMul;
+  inst.position.set(x, baseOffset, z);
   scene.add(inst);
+  placedBuildingCount++;
+  if(placedBuildingCount<=3){
+    console.log('[building placed]', key, 'at x,z=', x.toFixed(2), z.toFixed(2), 'scale=', scaleMul);
+  }
 }
 function buildBuildingInstances(){
+  console.log('[buildBuildingInstances] templates available:', Object.keys(buildingTemplates));
   for(let bx=2; bx<totalWidth3D-2; bx+=5.2){
     const frac = bx/totalWidth3D;
     const key = frac<0.33 ? (Math.floor(bx)%2===0?'early':'filler')
@@ -989,6 +1002,7 @@ function buildBuildingInstances(){
     const side = (Math.floor(bx)%2===0) ? 1 : -1;
     placeBuildingModel(key, bx, side*(3.6+ (bx%2)));
   }
+  console.log('[buildBuildingInstances] total placed:', placedBuildingCount, 'of totalWidth3D=', totalWidth3D.toFixed(2));
 }
 
 /* ---------- board squares ---------- */
