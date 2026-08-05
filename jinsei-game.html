@@ -300,7 +300,8 @@
 <p class="subtitle-text">～負けるが人生・出玉が全て～</p>
 <p style="font-size:9px;color:#555;text-align:center;margin:2px 0 0;">build: 2026-08-05-D</p>
 
-<div id="title">
+<div id="title" style="position:relative;">
+  <button onclick="location.replace(location.pathname + location.search + (location.search?'&':'?') + '_r=' + Date.now())" style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:50px;padding:5px 10px;font-size:10px;color:#ccc;cursor:pointer;">🔄 更新</button>
   <p class="subtitle-text">参加者</p>
   <div id="waitPlayerList" style="margin:14px 0;display:flex;flex-direction:column;gap:8px;"></div>
   <button class="start-btn" id="startBtn" style="display:none;">実戦スタート</button>
@@ -375,7 +376,7 @@ window.__jinseiFirebase = {
   jRef: () => ref(db, `rooms/${roomId}/jinsei`),
   fbSet: (path, value) => set(ref(db, `rooms/${roomId}/jinsei/${path}`), value),
   fbUpdate: (updates) => update(ref(db, `rooms/${roomId}/jinsei`), updates),
-  fbGet: async (path) => (await get(ref(db, `rooms/${roomId}/jinsei/${path || ''}`))).val(),
+  fbGet: async (path) => (await get(path ? ref(db, `rooms/${roomId}/jinsei/${path}`) : ref(db, `rooms/${roomId}/jinsei`))).val(),
   onJinseiChange: (cb) => onValue(ref(db, `rooms/${roomId}/jinsei`), snap => cb(snap.val()))
 };
 window.dispatchEvent(new Event('jinseiFirebaseReady'));
@@ -771,29 +772,51 @@ function makeSpriteEl(color, size){
 let FB = null; // window.__jinseiFirebaseがセットされたら入る
 let gameStarted = false;
 
+function handleJinseiData(data) {
+  if (!data) return;
+
+  if (data.status === 'waiting') {
+    renderWaitList(data.players || {});
+    // 自分がまだ登録されていなければ登録する
+    if (!(data.players && data.players[FB.myPid]) && FB.myName) {
+      FB.fbSet(`players/${FB.myPid}`, { name: FB.myName, joined: true });
+    }
+    return;
+  }
+
+  if (data.status === 'playing' && !gameStarted) {
+    gameStarted = true;
+    _lastProcessedRollTs = data.lastRoll ? data.lastRoll.ts : 0;
+    startLocalGameFromFirebase(data);
+    return;
+  }
+
+  if (data.status === 'playing' && gameStarted) {
+    syncFromFirebase(data);
+  }
+}
+
 function initOnlineFlow() {
   FB = window.__jinseiFirebase;
 
-  FB.onJinseiChange(async (data) => {
-    if (!data) return;
+  FB.onJinseiChange(data => handleJinseiData(data));
 
-    if (data.status === 'waiting') {
-      renderWaitList(data.players || {});
-      // 自分がまだ登録されていなければ登録する
-      if (!(data.players && data.players[FB.myPid]) && FB.myName) {
-        await FB.fbSet(`players/${FB.myPid}`, { name: FB.myName, joined: true });
-      }
-      return;
-    }
+  // リアルタイム通信が途切れた場合の保険：待機中は3秒ごとに現在の状態を確認する
+  setInterval(async () => {
+    if (gameStarted) return; // ゲーム開始後はonJinseiChangeに任せる
+    try {
+      const data = await FB.fbGet('');
+      handleJinseiData(data);
+    } catch (e) {}
+  }, 3000);
 
-    if (data.status === 'playing' && !gameStarted) {
-      gameStarted = true;
-      startLocalGameFromFirebase(data);
-    }
-
-    if (data.status === 'playing' && gameStarted) {
-      syncFromFirebase(data);
-    }
+  // タブがバックグラウンドから復帰したときにも即座に確認する
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    try {
+      const data = await FB.fbGet('');
+      handleJinseiData(data);
+    } catch (e) {}
   });
 }
 
@@ -875,7 +898,16 @@ function startLocalGameFromFirebase(data) {
 }
 
 /* Firebaseからの更新を受けて、観戦者側の表示を最新化する（自分の番のときは自分の操作を優先しローカル更新を上書きしない） */
+let _lastProcessedRollTs = 0;
 function syncFromFirebase(data) {
+  // サイコロを振った通知が新しければ、全員（振った本人含む）が同じ歩みアニメーションを再生する
+  if (data.lastRoll && data.lastRoll.ts > _lastProcessedRollTs && !spinning) {
+    _lastProcessedRollTs = data.lastRoll.ts;
+    renderTopPanel(); renderMap(); scrollToActive();
+    movePlayer(data.lastRoll.steps);
+    return;
+  }
+
   if (isMyTurn()) { updateSpectatorBanner(); return; } // 自分の番の間はローカル操作が正
   rebuildLocalPlayers(data);
   renderTopPanel(); renderMap(); refreshSidePanel(); scrollToActive();
@@ -1584,7 +1616,15 @@ spinBtn.onclick = ()=>{
     startShopRound(cur, cur.shopVisual.entry, cur.shopVisual.bet, cur.shopVisual.occurrence, true);
     return;
   }
-  spinReel((num)=>{ sndClick(); movePlayer(num); });
+  spinReel((num)=>{
+    sndClick();
+    if (FB) {
+      // 全員（自分含む）が同じ歩みアニメーションを見られるよう、結果をブロードキャストする
+      FB.fbSet('lastRoll', { steps: num, playerId: FB.myPid, ts: Date.now() });
+    } else {
+      movePlayer(num);
+    }
+  });
 };
 
 function movePlayer(steps){
@@ -1668,6 +1708,15 @@ function dialogueDeltaHtml(icon,title,text,delta){
 
 function onLanded(){
   const p = players[currentIdx];
+
+  // 観戦者側は自分でイベント抽選をせず、ターン終了時の同期を待つ
+  // （抽選結果が本人と食い違うのを防ぐため、演出のみ本人の画面で再生される）
+  if (FB && !isMyTurn()) {
+    document.getElementById('sideMenu').style.display='flex';
+    if(activeTab==='roulette') document.getElementById('arcadePanel').style.display='flex';
+    return;
+  }
+
   const data = getSquare(p, p.pos);
   renderTopPanel();
 
