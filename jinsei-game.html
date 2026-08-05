@@ -314,7 +314,8 @@
     <div id="playerLabels" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
 
     <div class="top-panel" id="topPanel"></div>
-    <div id="spectatorBanner" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(255,215,0,0.15);border:1.5px solid rgba(255,215,0,0.5);border-radius:50px;padding:8px 18px;font-size:12px;font-weight:900;color:#FFD23F;white-space:nowrap;"></div>
+    <div id="spectatorBanner" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(255,215,0,0.15);border:1.5px solid rgba(255,215,0,0.5);border-radius:50px;padding:8px 18px;font-size:12px;font-weight:900;color:#FFD23F;white-space:nowrap;text-align:center;"></div>
+    <div id="spectatorLock" style="display:none;position:absolute;inset:0;z-index:16;background:transparent;"></div>
     <div class="side-menu" id="sideMenu">
       <button data-tab="roulette" class="active" onclick="setTab('roulette')">🎯 ルーレット</button>
       <button data-tab="status" onclick="setTab('status')">📋 ステータス</button>
@@ -788,6 +789,7 @@ function handleJinseiData(data) {
     gameStarted = true;
     _lastProcessedRollTs = data.lastRoll ? data.lastRoll.ts : 0;
     _lastProcessedTurnIndex = data.currentTurnIndex;
+    _lastProcessedDialogueTs = data.dialogueEvent ? data.dialogueEvent.ts : 0;
     startLocalGameFromFirebase(data);
     return;
   }
@@ -876,14 +878,27 @@ function isMyTurn() {
   return players.length > 0 && players[currentIdx] && players[currentIdx].id === FB.myPid;
 }
 
+/* サイコロの初回移動だけでなく、寄り道後の残り移動なども同じ仕組みで全員に共有する */
+function broadcastMove(steps) {
+  if (FB) {
+    FB.fbSet('lastRoll', { steps, playerId: FB.myPid, ts: Date.now() });
+  } else {
+    movePlayer(steps);
+  }
+}
+
 function updateSpectatorBanner() {
   const banner = document.getElementById('spectatorBanner');
-  if (!players[currentIdx]) { banner.style.display = 'none'; return; }
+  const lock = document.getElementById('spectatorLock');
+  if (!players[currentIdx]) { banner.style.display = 'none'; lock.style.display = 'none'; return; }
   if (isMyTurn()) {
     banner.style.display = 'none';
+    lock.style.display = 'none';
+    box.style.pointerEvents = ''; // 自分の番のときはダイアログの操作を有効に戻す
   } else {
+    banner.innerHTML = `👀 ${players[currentIdx].name} の番です（観戦中）<br><span style="font-size:10px;text-decoration:underline;cursor:pointer;" onclick="backToTitle()">タイトルに戻る</span>`;
     banner.style.display = 'block';
-    banner.textContent = `👀 ${players[currentIdx].name} の番です（観戦中）`;
+    lock.style.display = 'block'; // 自分の番でない間はゲーム画面の操作を一切禁止する
   }
   spinBtn.disabled = !isMyTurn() || spinning;
 }
@@ -917,12 +932,14 @@ function syncFromFirebase(data) {
     return;
   }
 
-  // ダイアログ（イベント文章）の通知が新しければ、観戦者はそのまま表示する
-  // ※ここで処理した回は、下の「ターン終了時の同期」を今回のスナップショットでは行わない
-  //   （同時に処理すると表示した直後に閉じてしまうため）
-  if (data.lastDialogue && data.lastDialogue.ts > _lastProcessedDialogueTs && !isMyTurn()) {
-    _lastProcessedDialogueTs = data.lastDialogue.ts;
-    showSpectatorDialogue(data.lastDialogue.html, data.lastDialogue.text);
+  // ダイアログイベント（表示/非表示）の通知が新しければ、観戦者はそのまま反映する
+  if (data.dialogueEvent && data.dialogueEvent.ts > _lastProcessedDialogueTs && !isMyTurn()) {
+    _lastProcessedDialogueTs = data.dialogueEvent.ts;
+    if (data.dialogueEvent.kind === 'hide') {
+      overlay.style.display = 'none';
+    } else {
+      showSpectatorDialogue(data.dialogueEvent.html, data.dialogueEvent.text);
+    }
     return;
   }
 
@@ -976,7 +993,15 @@ const AMP = 1.6;       // sideways wiggle amplitude of the trunk path
 const LANE_GAP = 1.7;  // sideways offset between branch lanes
 
 function nodePos(i){
-  return { x: i*SPACING, z: Math.sin(i*0.8)*AMP };
+  return { x: i*SPACING, z: 0 }; // 主道はまっすぐにする（ジグザグを廃止）
+}
+function laneEase(t){
+  // 台形イージング：最初と最後の15%だけで素早く分岐/合流し、中間はレーンを保つ
+  // → T字・十字路のようにはっきり分かれて見える
+  const rampWidth = 0.18;
+  if (t < rampWidth) return t / rampWidth;
+  if (t > 1 - rampWidth) return (1 - t) / rampWidth;
+  return 1;
 }
 function branchLanePos(i, br, laneIdx, laneCount){
   const L = br.merge - br.entry - 1;
@@ -986,7 +1011,7 @@ function branchLanePos(i, br, laneIdx, laneCount){
   const zEnd = nodePos(br.merge).z;
   const centerZ = zStart + (zEnd-zStart)*t;
   const offset = (laneIdx - (laneCount-1)/2) * LANE_GAP;
-  const z = centerZ + offset*Math.sin(t*Math.PI);
+  const z = centerZ + offset*laneEase(t);
   const x = i*SPACING;
   return {x, z};
 }
@@ -1649,12 +1674,7 @@ spinBtn.onclick = ()=>{
   }
   spinReel((num)=>{
     sndClick();
-    if (FB) {
-      // 全員（自分含む）が同じ歩みアニメーションを見られるよう、結果をブロードキャストする
-      FB.fbSet('lastRoll', { steps: num, playerId: FB.myPid, ts: Date.now() });
-    } else {
-      movePlayer(num);
-    }
+    broadcastMove(num);
   });
 };
 
@@ -1688,6 +1708,12 @@ function movePlayer(steps){
     if(SHOP_FORKS[p.pos]){
       clearInterval(iv);
       stopCountdown();
+      if (FB && !isMyTurn()) {
+        // 観戦者は自分でダイアログを出さず、本人からのブロードキャストを待つ
+        document.getElementById('sideMenu').style.display='flex';
+        updateSpectatorBanner();
+        return;
+      }
       openShopForkDialog(p, p.pos, left);
       return;
     }
@@ -1709,7 +1735,7 @@ let _pendingBroadcastHtml = null;
 function typewrite(el, text, speed=22){
   // 自分の番のときだけ、ダイアログ内容を全員にブロードキャストする
   if (FB && isMyTurn() && el && el.id === 'dlgText') {
-    FB.fbSet('lastDialogue', { html: _pendingBroadcastHtml, text, ts: Date.now(), playerId: FB.myPid });
+    FB.fbSet('dialogueEvent', { kind: 'show', html: _pendingBroadcastHtml, text, ts: Date.now(), playerId: FB.myPid });
     _pendingBroadcastHtml = null;
   }
   el.textContent='';
@@ -1721,22 +1747,31 @@ function typewrite(el, text, speed=22){
 }
 function showDialogue(html, onShown){
   box.innerHTML = html;
+  box.style.pointerEvents = ''; // 本人の操作は常に有効
   overlay.style.display='flex';
   _pendingBroadcastHtml = html; // 直後のtypewrite呼び出しでこのhtmlも一緒にブロードキャストされる
   if(onShown) onShown();
 }
+/* 本人がダイアログを閉じたとき、観戦者側にも即座に閉じるよう伝える */
+function broadcastDialogueHide(){
+  if (FB && isMyTurn()) {
+    FB.fbSet('dialogueEvent', { kind: 'hide', ts: Date.now(), playerId: FB.myPid });
+  }
+}
 function closeDialogue(){
   if (FB && !isMyTurn()) { overlay.style.display='none'; return; } // 観戦者は閉じるだけ
   overlay.style.display='none';
+  broadcastDialogueHide();
   finishTurn();
 }
 window.closeDialogue = closeDialogue;
 
-/* 観戦者側：受信したダイアログをそのまま表示する（タイプライター無しで即時表示） */
+/* 観戦者側：受信したダイアログイベントをそのまま反映する（タイプライター無しで即時表示） */
 let _lastProcessedDialogueTs = 0;
 function showSpectatorDialogue(html, text) {
   box.innerHTML = html;
   overlay.style.display = 'flex';
+  box.style.pointerEvents = 'none'; // 観戦者側のダイアログは表示のみ・操作不可
   const el = document.getElementById('dlgText');
   if (el) el.textContent = text;
 }
@@ -1970,6 +2005,7 @@ window.finishShopRound = function(){
   if (FB && !isMyTurn()) { overlay.style.display='none'; return; }
   const { p, forkIdx, bet, occurrence, isSecond } = shopState;
   overlay.style.display='none';
+  broadcastDialogueHide();
   if(!isSecond){
     p.shopVisual.stage = 2;
     p.shopAwaitingRound2 = true;
@@ -1985,6 +2021,9 @@ window.paydaySpin = function(){
   if(spinning) return;
   if (FB && !isMyTurn()) return;
   overlay.style.display='none';
+  document.getElementById('sideMenu').style.display='flex';
+  document.getElementById('arcadePanel').style.display='flex'; // 移動中に隠れたリールを再表示する
+  broadcastDialogueHide();
   spinReel((num)=>{
     const p = players[currentIdx];
     const delta = num*10;
@@ -2033,8 +2072,9 @@ window.shopForkChoice = function(visit){
   const fork = SHOP_FORKS[idx];
   sndClick();
   overlay.style.display = 'none';
+  broadcastDialogueHide();
   if(!visit){
-    if(remaining > 0) movePlayer(remaining);
+    if(remaining > 0) broadcastMove(remaining);
     else finishTurn();
     return;
   }
