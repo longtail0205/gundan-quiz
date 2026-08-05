@@ -900,15 +900,29 @@ function startLocalGameFromFirebase(data) {
 /* Firebaseからの更新を受けて、観戦者側の表示を最新化する（自分の番のときは自分の操作を優先しローカル更新を上書きしない） */
 let _lastProcessedRollTs = 0;
 function syncFromFirebase(data) {
-  // サイコロを振った通知が新しければ、全員（振った本人含む）が同じ歩みアニメーションを再生する
+  // サイコロを振った通知が新しければ、全員が同じ歩みアニメーションを再生する
   if (data.lastRoll && data.lastRoll.ts > _lastProcessedRollTs && !spinning) {
     _lastProcessedRollTs = data.lastRoll.ts;
     renderTopPanel(); renderMap(); scrollToActive();
-    movePlayer(data.lastRoll.steps);
+    if (data.lastRoll.playerId === FB.myPid) {
+      // 自分がサイコロを振った本人：リール演出はすでに見ているのでコマ移動だけ行う
+      movePlayer(data.lastRoll.steps);
+    } else {
+      // 観戦者：リールの回転演出も同じ出目で再生してからコマを動かす
+      document.getElementById('arcadePanel').style.display = 'flex';
+      spinReel(()=>{ movePlayer(data.lastRoll.steps); }, data.lastRoll.steps);
+    }
     return;
   }
 
+  // ダイアログ（イベント文章）の通知が新しければ、観戦者はそのまま表示する
+  if (data.lastDialogue && data.lastDialogue.ts > _lastProcessedDialogueTs && !isMyTurn()) {
+    _lastProcessedDialogueTs = data.lastDialogue.ts;
+    showSpectatorDialogue(data.lastDialogue.html, data.lastDialogue.text);
+  }
+
   if (isMyTurn()) { updateSpectatorBanner(); return; } // 自分の番の間はローカル操作が正
+  overlay.style.display = 'none'; // ターンが進んだので観戦者側のダイアログ表示を閉じる
   rebuildLocalPlayers(data);
   renderTopPanel(); renderMap(); refreshSidePanel(); scrollToActive();
   updateSpectatorBanner();
@@ -1556,6 +1570,13 @@ function buildOtherHtml(){
     <button class="side-action" onclick="backToTitle()">🏠 タイトルに戻る</button>`;
 }
 window.backToTitle = function(){
+  if (FB) {
+    const url = FB.isHost
+      ? `${location.origin}${location.pathname.replace('jinsei-game.html', 'room-host.html')}?room=${FB.roomId}`
+      : `${location.origin}${location.pathname.replace('jinsei-game.html', 'room-play.html')}?room=${FB.roomId}`;
+    location.href = url;
+    return;
+  }
   document.getElementById('game').style.display='none';
   document.getElementById('title').style.display='block';
 };
@@ -1576,12 +1597,12 @@ function buildReel(){
 }
 buildReel();
 
-function spinReel(onDone){
+function spinReel(onDone, presetNum){
   spinning = true; spinBtn.disabled = true;
   ensureCtx();
   reelCol.style.transition='none';
   reelCol.style.transform='translateY(0px)';
-  const num = 1 + Math.floor(Math.random()*6);
+  const num = presetNum || (1 + Math.floor(Math.random()*6));
 
   const fastOffset = -(12*64);
   const tick1 = setInterval(sndClick, 60);
@@ -1674,7 +1695,13 @@ function movePlayer(steps){
 /* ================= DIALOGUE ================= */
 const overlay = document.getElementById('dialogueOverlay');
 const box = document.getElementById('dialogueBox');
+let _pendingBroadcastHtml = null;
 function typewrite(el, text, speed=22){
+  // 自分の番のときだけ、ダイアログ内容を全員にブロードキャストする
+  if (FB && isMyTurn() && el && el.id === 'dlgText') {
+    FB.fbSet('lastDialogue', { html: _pendingBroadcastHtml, text, ts: Date.now(), playerId: FB.myPid });
+    _pendingBroadcastHtml = null;
+  }
   el.textContent='';
   let i=0;
   const iv = setInterval(()=>{
@@ -1685,13 +1712,24 @@ function typewrite(el, text, speed=22){
 function showDialogue(html, onShown){
   box.innerHTML = html;
   overlay.style.display='flex';
+  _pendingBroadcastHtml = html; // 直後のtypewrite呼び出しでこのhtmlも一緒にブロードキャストされる
   if(onShown) onShown();
 }
 function closeDialogue(){
+  if (FB && !isMyTurn()) { overlay.style.display='none'; return; } // 観戦者は閉じるだけ
   overlay.style.display='none';
   finishTurn();
 }
 window.closeDialogue = closeDialogue;
+
+/* 観戦者側：受信したダイアログをそのまま表示する（タイプライター無しで即時表示） */
+let _lastProcessedDialogueTs = 0;
+function showSpectatorDialogue(html, text) {
+  box.innerHTML = html;
+  overlay.style.display = 'flex';
+  const el = document.getElementById('dlgText');
+  if (el) el.textContent = text;
+}
 
 function applyDelta(p, delta){ p.money = Math.round((p.money + delta)*10)/10; }
 
@@ -1714,6 +1752,7 @@ function onLanded(){
   if (FB && !isMyTurn()) {
     document.getElementById('sideMenu').style.display='flex';
     if(activeTab==='roulette') document.getElementById('arcadePanel').style.display='flex';
+    updateSpectatorBanner(); // spinBtnの無効化状態を再適用
     return;
   }
 
@@ -1839,6 +1878,7 @@ window.startShopRound = function(p, forkIdx, bet, occurrence, isSecond){
 };
 
 window.selectShopMachine = function(i){
+  if (FB && !isMyTurn()) return;
   const setting = shopState.perm[i];
   shopState.setting = setting;
   sndClick();
@@ -1847,11 +1887,13 @@ window.selectShopMachine = function(i){
 };
 
 window.replayLever = function(){
+  if (FB && !isMyTurn()) return;
   showDialogue(leverScreenHtml(shopState.setting),
     ()=> typewrite(document.getElementById('dlgText'), "もう一度レバーを叩こう！(掛け金は据え置き)"));
 };
 
 window.pullShopLever = function(){
+  if (FB && !isMyTurn()) return;
   sndClick();
   const cat = drawCategory(shopState.setting);
   shopState.category = cat;
@@ -1868,6 +1910,7 @@ window.pullShopLever = function(){
 };
 
 window.stopShopReel = function(i){
+  if (FB && !isMyTurn()) return;
   sndClick();
   clearInterval(shopState.intervals[i]);
   document.getElementById('mreel'+i).innerHTML = symbolIcon(shopState.symbols[i]);
@@ -1914,6 +1957,7 @@ function revealShopResult(){
 }
 
 window.finishShopRound = function(){
+  if (FB && !isMyTurn()) { overlay.style.display='none'; return; }
   const { p, forkIdx, bet, occurrence, isSecond } = shopState;
   overlay.style.display='none';
   if(!isSecond){
@@ -1922,13 +1966,14 @@ window.finishShopRound = function(){
   } else {
     p.shopVisual = null;
     p.shopAwaitingRound2 = false;
-    p.shopBranchesDone.add(forkIdx);
+    p.shopBranchesDone.push(forkIdx);
   }
   finishTurn();
 };
 
 window.paydaySpin = function(){
   if(spinning) return;
+  if (FB && !isMyTurn()) return;
   overlay.style.display='none';
   spinReel((num)=>{
     const p = players[currentIdx];
@@ -1944,6 +1989,7 @@ window.paydaySpin = function(){
 };
 
 window.chooseRoute = function(entryIdx, routeIdx){
+  if (FB && !isMyTurn()) return;
   const p = players[currentIdx];
   const br = getBranchByEntry(entryIdx);
   const route = br.routes[routeIdx];
@@ -1972,6 +2018,7 @@ window.openShopForkDialog = function(p, idx, remaining){
 };
 
 window.shopForkChoice = function(visit){
+  if (FB && !isMyTurn()) return;
   const { p, idx, remaining } = forkContext;
   const fork = SHOP_FORKS[idx];
   sndClick();
