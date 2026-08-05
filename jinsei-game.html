@@ -933,6 +933,8 @@ function syncFromFirebase(data) {
   }
 
   // ダイアログイベント（表示/非表示）の通知が新しければ、観戦者はそのまま反映する
+  // ※ここではreturnしない（Firebaseの複数書き込みが1回のスナップショットにまとまって届き、
+  //   ターン変更を見逃す原因になっていたため）
   if (data.dialogueEvent && data.dialogueEvent.ts > _lastProcessedDialogueTs && !isMyTurn()) {
     _lastProcessedDialogueTs = data.dialogueEvent.ts;
     if (data.dialogueEvent.kind === 'hide') {
@@ -940,15 +942,14 @@ function syncFromFirebase(data) {
     } else {
       showSpectatorDialogue(data.dialogueEvent.html, data.dialogueEvent.text);
     }
-    return;
   }
 
   if (isMyTurn()) { updateSpectatorBanner(); return; } // 自分の番の間はローカル操作が正
 
-  // 本当にターンが進んだ（次の人に交代した）ときだけ、オーバーレイを閉じて全体を再構築する
+  // 本当にターンが進んだ（次の人に交代した）ときだけ、全体を再構築する
+  // （オーバーレイの開閉はdialogueEventのブロードキャストに任せる）
   if (data.currentTurnIndex !== _lastProcessedTurnIndex) {
     _lastProcessedTurnIndex = data.currentTurnIndex;
-    overlay.style.display = 'none';
     rebuildLocalPlayers(data);
     renderTopPanel(); renderMap(); refreshSidePanel(); scrollToActive();
     updateSpectatorBanner();
@@ -1434,31 +1435,66 @@ function placeSquare(pos, type){
   return mesh;
 }
 
+/* 2点間に道路（帯状のメッシュ）を敷く。分岐点で複数本つなぐとT字・十字路のように見える */
+function buildRoadBetween(p0, p1, width=1.1){
+  const dx = p1.x - p0.x, dz = p1.z - p0.z;
+  const length = Math.sqrt(dx*dx + dz*dz);
+  if(length < 0.05) return;
+  const angle = Math.atan2(dz, dx);
+  const geo = new THREE.BoxGeometry(length + 0.5, 0.06, width);
+  const mat = new THREE.MeshStandardMaterial({ color:0x2b2b3a, roughness:0.95 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set((p0.x+p1.x)/2, 0.03, (p0.z+p1.z)/2);
+  mesh.rotation.y = -angle;
+  scene.add(mesh);
+}
+
 function buildStaticBoard(){
   let i = 0;
+  let prevMainPos = null; // 直前の「主道」上の点（分岐の入口・出口も含む）
   while(i < TOTAL){
     const br = getBranchByEntry(i);
     if(br){
-      placeSquare(nodePos(i), 'branch');
+      const entryPos = nodePos(i);
+      placeSquare(entryPos, 'branch');
+      if(prevMainPos) buildRoadBetween(prevMainPos, entryPos);
+
       const L = br.merge - br.entry - 1;
       br.routes.forEach((route, laneIdx)=>{
+        let prevLanePos = entryPos; // 分岐入口からスタート（ここから枝分かれする）
         for(let k=0;k<L;k++){
           const idx = br.entry+1+k;
-          placeSquare(branchLanePos(idx, br, laneIdx, br.routes.length), 'route');
+          const lanePos = branchLanePos(idx, br, laneIdx, br.routes.length);
+          placeSquare(lanePos, 'route');
+          buildRoadBetween(prevLanePos, lanePos); // 各レーン内をつなぐ（＋入口からの分岐線）
+          prevLanePos = lanePos;
         }
+        // レーンの最後から合流点へ道をつなぐ（複数レーンが1点に集まる＝合流）
+        const mergePos = nodePos(br.merge);
+        buildRoadBetween(prevLanePos, mergePos);
       });
-      placeSquare(nodePos(br.merge), getStaticVisual(br.merge).type);
+
+      const mergePos = nodePos(br.merge);
+      placeSquare(mergePos, getStaticVisual(br.merge).type);
+      prevMainPos = mergePos;
       i = br.merge + 1;
       continue;
     }
-    placeSquare(nodePos(i), getStaticVisual(i).type);
+    const pos = nodePos(i);
+    placeSquare(pos, getStaticVisual(i).type);
+    if(prevMainPos) buildRoadBetween(prevMainPos, pos);
+    prevMainPos = pos;
     i++;
   }
   // decorative "visit the shop" loop under each shop fork
   Object.keys(SHOP_FORKS).map(Number).forEach(idx=>{
     if(idx+1 >= TOTAL) return;
-    placeSquare(shopLoopPos(idx,1), 'route');
-    placeSquare(shopLoopPos(idx,2), 'route');
+    const p1 = shopLoopPos(idx,1), p2 = shopLoopPos(idx,2);
+    placeSquare(p1, 'route');
+    placeSquare(p2, 'route');
+    buildRoadBetween(nodePos(idx), p1, 0.7);
+    buildRoadBetween(p1, p2, 0.7);
+    buildRoadBetween(p2, nodePos(idx+1), 0.7);
   });
 }
 
