@@ -149,7 +149,7 @@
     .side-menu button{padding:8px 12px;font-size:10px;border-radius:16px;}
     .mute-corner{top:8px;right:8px;padding:5px 8px;font-size:12px;}
     .side-panel{
-      position:fixed;left:5%;right:5%;top:18%;bottom:18%;max-width:none;
+      position:fixed;left:4%;right:4%;top:270px;bottom:16px;max-width:none;
       overflow-y:auto;z-index:40;
     }
     .arcade{padding:8px 12px;gap:6px;bottom:8px;}
@@ -1162,6 +1162,9 @@ function renderTopPanel(){
   refreshSidePanel();
 }
 window.setTab = function(tab){
+  if(tab === activeTab && tab !== 'roulette'){
+    tab = 'roulette'; // pressing the already-active button again clears it
+  }
   activeTab = tab;
   document.querySelectorAll('.side-menu button').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
   const panel = document.getElementById('sidePanel');
@@ -1173,13 +1176,17 @@ window.setTab = function(tab){
   }
   arcade.style.display='none';
   panel.style.display='block';
-  if(tab==='status') panel.innerHTML = buildStatusHtml();
-  if(tab==='map') panel.innerHTML = buildMiniMapHtml();
-  if(tab==='other') panel.innerHTML = buildOtherHtml();
+  renderActivePanelContent();
 };
+function renderActivePanelContent(){
+  const panel = document.getElementById('sidePanel');
+  if(activeTab==='status') panel.innerHTML = buildStatusHtml();
+  if(activeTab==='map') panel.innerHTML = buildMiniMapHtml();
+  if(activeTab==='other') panel.innerHTML = buildOtherHtml();
+}
 function refreshSidePanel(){
   if(activeTab==='roulette') return;
-  setTab(activeTab);
+  renderActivePanelContent();
 }
 function buildStatusHtml(){
   return `<div class="panel-title">📋 ステータス</div>` + players.map(p=>`
