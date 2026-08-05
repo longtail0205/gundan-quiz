@@ -952,6 +952,17 @@ function base64ToArrayBuffer(base64){
 const BUILDING_SCALE = { filler:0.9, early:0.9, mid:0.85, late:0.6 };
 let buildingTemplates = {};
 let buildingBaseOffset = {};
+function describeError(err){
+  try{
+    if(!err) return 'no error object';
+    if(err.message) return err.message;
+    if(err.type){
+      const tag = err.target ? (err.target.tagName || (err.target.constructor && err.target.constructor.name)) : '?';
+      return `event type=${err.type} target=${tag}`;
+    }
+    return JSON.stringify(err);
+  }catch(e){ return String(err); }
+}
 function loadBuildingModels(onDone){
   const keys = Object.keys(BUILDING_MODELS_B64);
   let remaining = keys.length;
@@ -968,29 +979,51 @@ function loadBuildingModels(onDone){
           'min.y=', box.min.y.toFixed(2), 'max.y=', box.max.y.toFixed(2));
         if(--remaining===0) onDone();
       }, (err)=>{
-        console.error('glTF load failed:', key, err);
+        console.error('glTF load failed:', key, describeError(err));
         if(--remaining===0) onDone();
       });
     }catch(e){
-      console.error('glTF parse error:', key, e);
+      console.error('glTF parse error:', key, e && e.message ? e.message : e);
       if(--remaining===0) onDone();
     }
   });
 }
+const FALLBACK_COLORS = { filler:0xcfd3e6, early:0xF4A261, mid:0x845EF7, late:0x2b2b52 };
+function makeFallbackBuilding(key){
+  const g = new THREE.Group();
+  const h = key==='late' ? 3.2 : key==='mid' ? 2.2 : key==='early' ? 1.6 : 1.2;
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(1.1, h, 1.1),
+    new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS[key] || 0xcccccc, roughness:0.7 })
+  );
+  body.position.y = h/2;
+  g.add(body);
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(0.9, 0.6, 4),
+    new THREE.MeshStandardMaterial({ color:0x333344, roughness:0.6 })
+  );
+  roof.rotation.y = Math.PI/4;
+  roof.position.y = h + 0.3;
+  g.add(roof);
+  return g;
+}
 let placedBuildingCount = 0;
 function placeBuildingModel(key, x, z){
   const template = buildingTemplates[key];
-  if(!template){ console.warn('[building missing template]', key); return; }
-  const inst = template.clone(true);
-  const scaleMul = BUILDING_SCALE[key] || 1;
-  inst.scale.setScalar(scaleMul);
-  const baseOffset = (buildingBaseOffset[key] || 0) * scaleMul;
-  inst.position.set(x, baseOffset, z);
+  let inst;
+  if(template){
+    inst = template.clone(true);
+    const scaleMul = BUILDING_SCALE[key] || 1;
+    inst.scale.setScalar(scaleMul);
+    const baseOffset = (buildingBaseOffset[key] || 0) * scaleMul;
+    inst.position.set(x, baseOffset, z);
+  } else {
+    // model failed to load — use a simple colored primitive so the scene still looks complete
+    inst = makeFallbackBuilding(key);
+    inst.position.set(x, 0, z);
+  }
   scene.add(inst);
   placedBuildingCount++;
-  if(placedBuildingCount<=3){
-    console.log('[building placed]', key, 'at x,z=', x.toFixed(2), z.toFixed(2), 'scale=', scaleMul);
-  }
 }
 function buildBuildingInstances(){
   console.log('[buildBuildingInstances] templates available:', Object.keys(buildingTemplates));
